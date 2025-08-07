@@ -135,10 +135,9 @@ def run_streamable_http(json_response: bool, oauth: bool):
 @click.option("--mode", default="streamable_http", help="mode type")
 @click.option("--oauth", default=False, help="open oauth")
 def main(mode, envfile, oauth):
-
-    manager = MultiDBPoolManager(auto_init_from_config=True)
+    # 启动时初始化全局连接池（单例）
+    MultiDBPoolManager.init_from_config()
     print(f"\n✓ 成功初始化连接池管理器")
-    print(f"  可用连接池: {manager.get_pool_names()}")
 
     # 使用传入的默认模式
     if mode == "stdio":

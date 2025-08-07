@@ -6,6 +6,7 @@
 import logging
 from typing import Dict, Any, Optional, List
 from contextlib import contextmanager
+import threading
 
 from .SQLAlchemyConnectionPool import (
     SQLAlchemyConnectionPool
@@ -20,17 +21,41 @@ class MultiDBPoolManager:
     多数据库连接池管理器
     管理多个不同数据库的连接池，提供统一的访问接口
     """
-    
+    _instance = None
+    _lock = threading.Lock()
+
+    @classmethod
+    def get_instance(cls) -> "MultiDBPoolManager":
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = cls(auto_init_from_config=False)
+        return cls._instance
+
+    @classmethod
+    def init_from_config(cls):
+        """类方法：初始化单例并从配置加载所有连接池（只应在服务启动时调用一次）"""
+        instance = cls.get_instance()
+        instance._init_from_config()
+        return instance
+
+    @classmethod
+    def get_pool(cls, pool_name: str) -> Optional[SQLAlchemyConnectionPool]:
+        """类方法：获取指定名称的连接池"""
+        instance = cls.get_instance()
+        return instance._pools.get(pool_name)
+
+    @classmethod
+    def get_pool_names(cls):
+        instance = cls.get_instance()
+        return instance._pools.keys()
+
     def __init__(self, auto_init_from_config: bool = True):
-        """
-        初始化多数据库连接池管理器
-        
-        Args:
-            auto_init_from_config: 是否自动从配置文件初始化连接池
-        """
+        if hasattr(self, '_initialized') and self._initialized:
+            return
         self._pools: Dict[str, SQLAlchemyConnectionPool] = {}
         logger.info("MultiDBPoolManager initialized")
-
+        self._initialized = True
         if auto_init_from_config:
             self._init_from_config()
 
@@ -136,7 +161,7 @@ class MultiDBPoolManager:
             SQLAlchemyConnectionPool: MySQL连接池实例
         """
         database_url = f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}"
-        print(database_url)
+
         return SQLAlchemyConnectionPool(
             database_url=database_url,
             pool_type=pool_type,
@@ -191,27 +216,6 @@ class MultiDBPoolManager:
             pool_timeout=pool_timeout,
             **kwargs
         )
-
-    def get_pool(self, pool_name: str) -> Optional[SQLAlchemyConnectionPool]:
-        """
-        获取指定名称的连接池
-
-        Args:
-            pool_name: 连接池名称
-
-        Returns:
-            SQLAlchemyConnectionPool: 连接池实例，如果不存在返回None
-        """
-        return self._pools.get(pool_name)
-
-    def get_pool_names(self) -> List[str]:
-        """
-        获取所有连接池名称列表
-
-        Returns:
-            List[str]: 所有连接池名称的列表
-        """
-        return list(self._pools.keys())
 
     def remove_pool(self, pool_name: str) -> bool:
         """
