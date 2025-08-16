@@ -1,5 +1,4 @@
-<img width="1116" height="275" alt="image" src="https://github.com/user-attachments/assets/e17a05c9-7812-403f-9354-f17dbab53b8d" />
-
+<img width="1023" height="270" alt="image" src="https://github.com/user-attachments/assets/4b282174-dd45-4edb-9de8-9b14e2c59a9e" />
 
 # SmartDB
 
@@ -7,7 +6,7 @@ SmartDB是一个通用数据库网关，实现了模型上下文协议（Model C
 
 与同类产品相比，SmartDB不仅提供基本的数据库连接和探索功能，还增加了OAuth2.0认证、健康检查、SQL优化和索引健康检测等高级功能，使数据库管理和维护更加安全、智能化。
 
-<img width="1128" height="549" alt="image" src="https://github.com/user-attachments/assets/dd58d4ff-b78c-4630-a729-df13877abd44" />
+<img width="1295" height="685" alt="image" src="https://github.com/user-attachments/assets/3c06b0f7-11a8-444e-a50a-9e616af16467" />
 
 
 # 目前支持的数据库
@@ -287,9 +286,12 @@ uv run -m core.server --oauth=true
 ```
 
 2. 访问 认证服务 http://localhost:3000/login ，默认帐号密码在 env 中配置
+<img width="1777" height="950" alt="image" src="https://github.com/user-attachments/assets/20531bee-467f-4758-bc08-fddc086ed411" />
 
 
-4. 复制 token ，将token 添加在请求头中，例如
+3. 复制 token ，将token 添加在请求头中，例如
+<img width="1838" height="1021" alt="image" src="https://github.com/user-attachments/assets/df911d7a-d3d0-44dc-b3c6-58607ff3807d" />
+
 
 ```json
 {
