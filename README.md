@@ -1,9 +1,15 @@
+<img width="1023" height="270" alt="image" src="https://github.com/user-attachments/assets/4b282174-dd45-4edb-9de8-9b14e2c59a9e" />
+
 
 # SmartDB
 
 SmartDB is a universal database gateway that implements the Model Context Protocol (MCP) server interface. This gateway allows MCP-compatible clients to connect and explore different databases.
 
-Compared to similar products, SmartDB not only provides basic database connection and exploration capabilities but also adds advanced features such as OAuth 2.0 authentication, health checks, SQL optimization, and index health detection, making database management and maintenance more secure and intelligent.
+Compared to similar products, SmartDB not only provides basic database connection and exploration capabilities but also adds advanced features such as OAuth 2.0 authentication , health checks, SQL optimization, and index health detection, making database management and maintenance more secure and intelligent.
+
+<img width="1295" height="685" alt="image" src="https://github.com/user-attachments/assets/3c06b0f7-11a8-444e-a50a-9e616af16467" />
+
+
 
 ## Currently Supported Databases
 | Database | Support | Description |
@@ -282,8 +288,12 @@ uv run -m core.server --oauth=true
 ```
 
 2. Access the authentication service at http://localhost:3000/login. Default account and password are configured in the env file.
+<img width="1777" height="950" alt="image" src="https://github.com/user-attachments/assets/20531bee-467f-4758-bc08-fddc086ed411" />
+
 
 3. Copy the token and add it to the request header, for example:
+<img width="1838" height="1021" alt="image" src="https://github.com/user-attachments/assets/df911d7a-d3d0-44dc-b3c6-58607ff3807d" />
+
 
 ```json
 {
