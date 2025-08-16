@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  smartdb:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartdb-mcp-server
+    ports:
+      - "3000:3000"  # 如果你的应用监听 3000 端口，请根据实际情况调整
+    environment:
+      DATABASE_CONFIG_FILE: ${DATABASE_CONFIG_FILE:-/Volumes/xwbData/data/code/myself/python/SmartDB/src/config/database_config.json}
+      CLIENT_ID: ${CLIENT_ID:-smart_db_client_id}
+      CLIENT_SECRET: ${CLIENT_SECRET:-smart_db_client_secret}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-30}
+      TOKEN_SECRET_KEY: ${TOKEN_SECRET_KEY:-smart_db_token_secret}
+      OAUTH_USER_NAME: ${OAUTH_USER_NAME:-admin}
+      OAUTH_USER_PASSWORD: ${OAUTH_USER_PASSWORD:-admin}
+      PYTHONPATH: /app/src
+    restart: unless-stopped
+    command: ["python", "-m", "core.server"]

@@ -1,0 +1,57 @@
+{
+  "default": {
+    "host": "192.168.x.xxx",
+    "port": 3306,
+    "user": "root",
+    "password": "root",
+    "database": "a_llm",
+    "role": "readonly",
+    "pool_size": 10,
+    "max_overflow": 20,
+    "pool_recycle": 3600,
+    "pool_timeout": 30,
+    "type": "mysql"
+  },
+  "postgresql": {
+    "host": "192.168.x.xxx",
+    "port": 5432,
+    "user": "postgres",
+    "password": "123456",
+    "database": "postgres",
+    "schema": "public",
+    "role": "readonly",
+    "pool_size": 5,
+    "max_overflow": 10,
+    "pool_recycle": 3600,
+    "pool_timeout": 30,
+    "type": "postgresql"
+  },
+  "oracle": {
+    "host": "192.168.x.xxx",
+    "port": 1521,
+    "user": "U_ORACLE",
+    "password": "123456",
+    "database": "U_ORACLE",
+    "service_name": "ORCL",
+    "role": "readonly",
+    "pool_size": 5,
+    "max_overflow": 10,
+    "pool_recycle": 3600,
+    "pool_timeout": 30,
+    "type": "oracle"
+  },
+  "mssql": {
+    "host": "192.168.x.xxx",
+    "port": 1433,
+    "user": "test",
+    "password": "123456",
+    "database": "TEST",
+    "schema": "dbo",
+    "role": "readonly",
+    "pool_size": 5,
+    "max_overflow": 10,
+    "pool_recycle": 3600,
+    "pool_timeout": 30,
+    "type": "mssqlserver"
+  }
+}

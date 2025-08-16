@@ -1,3 +1,4 @@
+
 # SmartDB
 
 SmartDB is a universal database gateway that implements the Model Context Protocol (MCP) server interface. This gateway allows MCP-compatible clients to connect and explore different databases.
@@ -46,6 +47,7 @@ OAUTH_USER_NAME=admin
 # Password
 OAUTH_USER_PASSWORD=wenb1n
 ```
+Note: If you adjust the client ID and key in the oauth configuration, please also modify the corresponding configuration in the static/config file in the previous code
 
 ### Database Connection Configuration Description
 ```json
