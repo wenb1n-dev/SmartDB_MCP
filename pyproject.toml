@@ -2,7 +2,7 @@
 name = "SmartDB_MCP"
 version = "1.0.0"
 license = { text = "MIT" }
-description = "Support for SSE, STDIO in MySQL MCP server, includes CRUD, database anomaly analysis capabilities .支持SSE，STDIO；不仅止于mysql的增删改查功能； 还包含了数据库异常分析能力；且便于开发者们进行个性化的工具扩展"
+description = "SmartDB is a universal database gateway that implements the Model Context Protocol (MCP) server interface.SmartDB not only provides basic database connection and exploration capabilities but also adds advanced features such as OAuth 2.0 authentication , health checks, SQL optimization, and index health detection, making database management and maintenance more secure and intelligent."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -25,6 +25,9 @@ dependencies = [
 [[project.authors]]
 name = "wenb1n"
 
+[project.scripts]
+smartdb = "core.server:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -34,5 +37,9 @@ build-backend = "hatchling.build"
 packages = ["src"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/core"]
+packages = ["src/core", "src/config", "src/connection", "src/tools", "src/oauth", "src/utils", "src/databases"]
 
+[project.urls]
+Homepage = "https://github.com/wenb1n-dev/SmartDB_MCP"
+Documentation = "https://github.com/wenb1n-dev/SmartDB_MCP/blob/main/README.md"
+Repository = "https://github.com/wenb1n-dev/SmartDB_MCP.git"

@@ -143,6 +143,8 @@ def run_streamable_http(json_response: bool, oauth: bool):
 
     middleware = []
 
+    routes.append(Mount("/mcp", app=handle_streamable_http))
+
     if oauth:
         from oauth import OAuthMiddleware, login, login_page
 
@@ -157,7 +159,6 @@ def run_streamable_http(json_response: bool, oauth: bool):
         if os.path.exists(static_dir):
             routes.append(Mount("/", app=StaticFiles(directory=static_dir, html=True)))
 
-    routes.append(Mount("/mcp", app=handle_streamable_http))
 
     # 创建应用实例
     starlette_app = Starlette(

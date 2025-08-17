@@ -1,3 +1,6 @@
+[![简体中文](https://img.shields.io/badge/简体中文-点击查看-orange)](README-zh.md)
+[![English](https://img.shields.io/badge/English-Click-yellow)](README.md)
+
 <img width="1023" height="270" alt="image" src="https://github.com/user-attachments/assets/4b282174-dd45-4edb-9de8-9b14e2c59a9e" />
 
 # SmartDB
