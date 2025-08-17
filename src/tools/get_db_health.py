@@ -12,7 +12,7 @@ class DatabaseHealth(ToolsBase):
     """数据库健康检查工具"""
 
     name = "get_db_health"
-    description = "获取当前的数据库健康状态"
+    description = "获取数据库健康状态 / Get database health status"
 
     def get_tool_description(self) -> Tool:
         """获取工具描述"""
@@ -59,10 +59,11 @@ class DatabaseHealth(ToolsBase):
             # 获取数据库版本号
             factory = DatabaseOperationFactory.get_factory_by_pool_name(pool_name)
             db_version = factory.create_db_version().get_db_version(pool_name)
-
+            # 获取数据库工厂类
             factory = DatabaseOperationFactory.get_factory_by_pool_name(pool_name)
-
+            # 获取健康状态实例
             handler = factory.create_db_health()
+            # 获取健康状态
             results = handler.get_db_health(pool_name, health_type)
 
             prompt = f"""
