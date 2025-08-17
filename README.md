@@ -313,5 +313,7 @@ uv run -m core.server --oauth=true
 ```
 
 ## Usage Examples
+1. Query the table data of the default connection pool
+<img width="1131" height="1112" alt="image" src="https://github.com/user-attachments/assets/a858a38a-c57e-47a6-8f74-2458266859ac" />
 
-[Add usage examples ]
+2. 
