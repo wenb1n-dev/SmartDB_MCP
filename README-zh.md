@@ -311,3 +311,19 @@ uv run -m core.server --oauth=true
 ```
 
 ## 使用示例
+1. 查询default连接池的表数据
+    <img width="1136" height="731" alt="image" src="https://github.com/user-attachments/assets/14e6adf6-f7a2-45a7-b4e6-df29cc9e2604" />
+
+2. 查询其他连接池的表数据
+   <img width="1130" height="805" alt="image" src="https://github.com/user-attachments/assets/e6419269-16c1-4a3b-aa73-d74647fe1bbd" />
+
+3. 查询其他连接池、其他库的表数据
+  <img width="1127" height="668" alt="image" src="https://github.com/user-attachments/assets/dd5cfea9-4d9b-46eb-b1cc-ad38963ed671" />
+
+4. 修改表数据
+  <img width="1138" height="696" alt="image" src="https://github.com/user-attachments/assets/930fb947-656f-41a7-93fa-2b83dd64b4ec" />
+
+5. 数据库健康检测
+  <img width="1119" height="3264" alt="image" src="https://github.com/user-attachments/assets/d065173b-140c-44f1-9ce8-16ac61562b38" />
+
+
