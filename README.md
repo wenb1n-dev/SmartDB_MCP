@@ -316,4 +316,13 @@ uv run -m core.server --oauth=true
 1. Query the table data of the default connection pool
 <img width="1131" height="1112" alt="image" src="https://github.com/user-attachments/assets/a858a38a-c57e-47a6-8f74-2458266859ac" />
 
-2. 
+2. Query the table data of the others connection pool
+<img width="1144" height="728" alt="image" src="https://github.com/user-attachments/assets/ad619912-9aad-4e10-b4aa-b1de521390c2" />
+
+3. Query data from tables in other connection pools and other databases
+<img width="1128" height="586" alt="image" src="https://github.com/user-attachments/assets/f110f00f-319b-4754-ae4c-32fee0d2a44d" />
+
+4. Query database health status
+<img width="1140" height="2560" alt="image" src="https://github.com/user-attachments/assets/fa55271c-94ad-4079-a9eb-c68a8e607111" />
+
+   
