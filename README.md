@@ -257,7 +257,7 @@ MCP JSON as follows:
       "name": "smartdb",
       "description": "",
       "isActive": true,
-      "url": "http://localhost:9000/sse"
+      "url": "http://localhost:3000/sse"
     }
   }
 }
