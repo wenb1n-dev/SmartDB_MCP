@@ -352,4 +352,8 @@ uv run -m core.server --oauth=true
 4. Query database health status
 <img width="1140" height="2560" alt="image" src="https://github.com/user-attachments/assets/fa55271c-94ad-4079-a9eb-c68a8e607111" />
 
+5. Sql Optimize
+<img width="1554" height="3613" alt="image" src="https://github.com/user-attachments/assets/58d9c835-160c-44b3-b97c-0e46830ea438" />
+
+   
    
