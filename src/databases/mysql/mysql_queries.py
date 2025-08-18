@@ -55,7 +55,7 @@ class MySQLQueries:
         """
         table_condition = "','".join(table_names)
         return f"""
-            SELECT TABLE_NAME, COLUMN_NAME, COLUMN_COMMENT 
+            SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_COMMENT
             FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '{database}' 
             AND TABLE_NAME IN ('{table_condition}') ORDER BY TABLE_NAME, ORDINAL_POSITION;
             """
@@ -173,4 +173,21 @@ class MySQLQueries:
             event_name LIKE 'wait/io/file/innodb/%'
         ORDER BY
             sum_timer_wait DESC;
+        """
+
+    @staticmethod
+    def get_table_size(database: str, table_names: List[str]) -> str:
+
+        table_condition = "','".join(table_names)
+        return f"""
+            SELECT 
+                table_name AS `Table`, 
+                round(((data_length + index_length) / 1024 / 1024), 2) AS `Size (MB)`
+            FROM 
+                information_schema.tables
+            WHERE 
+                table_schema = '{database}'
+                AND table_name in ('{table_condition}')  
+            ORDER BY 
+                (data_length + index_length) DESC;
         """

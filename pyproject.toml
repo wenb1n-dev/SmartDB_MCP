@@ -37,7 +37,7 @@ build-backend = "hatchling.build"
 packages = ["src"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/core", "src/config", "src/connection", "src/tools", "src/oauth", "src/utils", "src/databases"]
+packages = ["src/core", "src/config", "src/connection", "src/tools", "src/oauth", "src/utils", "src/databases", "src/static"]
 
 [project.urls]
 Homepage = "https://github.com/wenb1n-dev/SmartDB_MCP"

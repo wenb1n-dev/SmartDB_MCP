@@ -70,6 +70,7 @@ class MSSQLServerQueries:
                 SELECT 
                 c.TABLE_NAME,
                 c.COLUMN_NAME,
+                c.DATA_TYPE,
                 ISNULL(ep.value, '') AS COLUMN_COMMENT
             FROM {db_prefix}INFORMATION_SCHEMA.COLUMNS c
             LEFT JOIN {db_prefix}SYS.EXTENDED_PROPERTIES ep 

@@ -99,13 +99,13 @@ class ExecuteSqlUtil:
                            upper_statement.startswith('WITH'))
                 
                 is_show = upper_statement.startswith('SHOW')
-                is_explain = upper_statement.startswith('EXPLAIN')
+                is_explain = upper_statement.startswith('EXPLAIN') and not upper_statement.startswith('EXPLAIN PLAN FOR ')
                 is_describe = (upper_statement.startswith('DESCRIBE') or 
                              upper_statement.startswith('DESC '))
                 
                 # 特殊语句类型（通常返回结果集）
                 is_query_type = is_select or is_show or is_explain or is_describe
-                
+
                 try:
                     # 执行SQL语句
                     result = conn.execute(text(statement))

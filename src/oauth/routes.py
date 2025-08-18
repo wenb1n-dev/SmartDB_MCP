@@ -63,13 +63,12 @@ async def login(request: Request) -> JSONResponse:
 
     try:
         data = await request.json()
-        print("data===>",data)
 
         # 验证授权类型
         grant_type = data.get("grant_type")
         if grant_type not in OAuthConfig.GRANT_TYPES:
             return JSONResponse(
-                {"error": "unsupported_grant_type"},
+                {"error": "unsupported_grant_type", "error_description": "Invalid grant type"},
                 status_code=400
             )
 
@@ -79,13 +78,13 @@ async def login(request: Request) -> JSONResponse:
         
         if not client_id or not client_secret:
             return JSONResponse(
-                {"error": "invalid_client"},
+                {"error": "invalid_client", "error_description": "Invalid client credentials/客户端id，secret校验失败"},
                 status_code=401
             )
             
         if client_id != os.getenv("CLIENT_ID") or client_secret != os.getenv("CLIENT_SECRET"):
             return JSONResponse(
-                {"error": "invalid_client"},
+                {"error": "invalid_client", "error_description": "Invalid client credentials/客户端id，secret校验失败"},
                 status_code=401
             )
 
@@ -97,7 +96,7 @@ async def login(request: Request) -> JSONResponse:
 
             if not username or not encrypted_password:
                 return JSONResponse(
-                    {"error": "invalid_request", "error_description": "Missing username or password"},
+                    {"error": "invalid_request", "error_description": "Missing username or password/用户名or密码不能为空"},
                     status_code=400
                 )
 
@@ -153,7 +152,7 @@ async def login(request: Request) -> JSONResponse:
                 )
             
             return JSONResponse(
-                {"error": "invalid_grant"},
+                {"error": "invalid_grant","error_description":"error username or password/用户名或密码错误"},
                 status_code=401
             )
             
@@ -161,7 +160,7 @@ async def login(request: Request) -> JSONResponse:
             refresh_token = data.get("refresh_token")
             if not refresh_token:
                 return JSONResponse(
-                    {"error": "invalid_request"},
+                    {"error": "invalid_request", "error_description": "Missing refresh token"},
                     status_code=400
                 )
                 
@@ -169,7 +168,7 @@ async def login(request: Request) -> JSONResponse:
             payload = TokenHandler.verify_token(refresh_token)
             if not payload or payload.get("type") != "refresh_token":
                 return JSONResponse(
-                    {"error": "invalid_grant"},
+                    {"error": "invalid_grant", "error_description": "Invalid refresh token"},
                     status_code=401
                 )
                 

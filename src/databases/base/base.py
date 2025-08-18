@@ -71,3 +71,29 @@ class DatabaseHealth(ABC):
             pool_name: 数据库名称
             health_type: 健康类型
         """
+
+class SqlOptimize(ABC):
+    """
+    SQL优化接口
+    """
+    @abstractmethod
+    def get_sql_explain(self, pool_name: str, sql: str):
+        """
+        获取SQL执行计划
+
+        Args:
+            pool_name: 数据库名称
+            sql: SQL语句
+        """
+
+    @abstractmethod
+    def get_table_size(self, pool_name: str, database: str, schema: str, table_name: str):
+        """
+        获取表大小
+
+        Args:
+            pool_name: 数据库名称
+            database: 数据库名称
+            schema: 模式名
+            table_name: 表名称
+        """

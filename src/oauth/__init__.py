@@ -1,6 +1,6 @@
-from .token_handler import TokenHandler
-from .middleware import OAuthMiddleware
-from .routes import login, login_page
+from oauth.token_handler import TokenHandler
+from oauth.middleware import OAuthMiddleware
+from oauth.routes import login, login_page
 
 __all__ = [
     "TokenHandler",

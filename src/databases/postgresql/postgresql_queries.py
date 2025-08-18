@@ -61,6 +61,7 @@ class PostgresqlQueries:
             SELECT
                 col.table_name AS "TABLE_NAME",
                 col.column_name AS "COLUMN_NAME",
+                col.data_type AS "DATA_TYPE",
                 pgd.description AS "COLUMN_COMMENT"
             FROM
                 information_schema.columns col
@@ -294,4 +295,23 @@ class PostgresqlQueries:
             pg_database
         WHERE
             datallowconn;
+        """
+
+    @staticmethod
+    def get_table_size(schema: str, table_names: List[str]) -> str:
+        table_condition = "','".join(table_names)
+
+        return f"""
+        SELECT
+            tablename AS "Table",
+            ROUND(
+                    (pg_total_relation_size(quote_ident(tablename))::NUMERIC / 1024 / 1024), 2
+            ) AS "Size (MB)"
+        FROM
+            pg_tables
+        WHERE
+            schemaname = '{schema}'  
+          AND tablename IN ('{table_condition}')
+        ORDER BY
+            pg_total_relation_size(quote_ident(tablename)) DESC;
         """
