@@ -144,9 +144,33 @@ The following table details the meaning and usage of each parameter in the datab
 | schema | PostgreSQL, SQL Server | No | string | Database schema |
 | service_name | Oracle | No | string | Oracle service name |
 
+* role permission control configuration items and corresponding database permissions: readonly (readonly), read/write (writer), administrator (admin)
+```
+    "readonly": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN"],  # readonly permission
+    "writer": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE"],  # read/write permission
+    "admin": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE", 
+             "CREATE", "ALTER", "DROP", "TRUNCATE"]  # administrator permission
+```
+
 * Note
 
 "default" is the default database connection configuration and must be configured. Other database configurations should be added as needed.
+
+## pip installation and configuration
+
+```bash
+pip install SmartDB-MCP
+
+Parameter explanation
+--mode: transmission mode ("stdio", "sse", "streamablehttp")
+--envfile path of the environment variable file
+--oauth enable oauth authentication (currently only supported in "streamablehttp" mode)
+
+Start command:
+ smartdb --envfile=/Volumes/config/.env --oauth=true
+
+
+```
 
 ## Docker Startup
 

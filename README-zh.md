@@ -144,9 +144,32 @@ OAUTH_USER_PASSWORD=wenb1n
 | schema | PostgreSQL, SQL Server | 否 | string | 数据库模式 |
 | service_name | Oracle | 否 | string | Oracle服务名 |
 
+* role 权限控制配置项以及对应数据库权限：只读（readonly）、读写（writer）、管理员（admin）
+```
+    "readonly": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN"],  # 只读权限
+    "writer": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE"],  # 读写权限
+    "admin": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE", 
+             "CREATE", "ALTER", "DROP", "TRUNCATE"]  # 管理员权限
+```
+   
 * 注意
 
 default 为默认数据库连接配置，必须配置，其他数据库配置请自行添加 
+
+## pip安装和配置
+1. 安装包
+```bash
+pip install SmartDB-MCP
+
+参数说明
+--mode：传输模式（“stdio”，“sse”，“streamablehttp”）
+--envfile 环境变量文件路径
+--oauth 启用 oauth 认证（目前仅支持“streamablehttp”模式）
+
+启动命令：
+ smartdb --envfile=/Volumes/config/.env --oauth=true
+
+```
 
 ## docker 启动
 ### 快速开始
