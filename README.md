@@ -32,6 +32,7 @@ Compared to similar products, SmartDB not only provides basic database connectio
 | get_table_name | Database table name query tool. Used to query all table names in the database or search for corresponding table names based on Chinese table names or table descriptions |
 | get_db_version | Database version query tool |
 | sql_creator | SQL query generation tool that generates corresponding SQL query statements based on different database types |
+| sql_optimize ｜ A professional SQL performance optimization tool that provides expert optimization suggestions based on execution plans, table structure information, table data volume, and table indexes.｜
 
 ## Usage
 
