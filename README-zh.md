@@ -4,7 +4,7 @@
 <img width="1023" height="270" alt="image" src="https://github.com/user-attachments/assets/4b282174-dd45-4edb-9de8-9b14e2c59a9e" />
 
 # SmartDB
-
+## 好用就帮忙点个赞，支持一下呀，拜托各位精英们～。
 SmartDB是一个通用数据库网关，实现了模型上下文协议（Model Context Protocol，简称MCP）服务器接口。这个网关允许与MCP兼容的客户端连接并探索不同的数据库。
 
 与同类产品相比，SmartDB不仅提供基本的数据库连接和探索功能，还增加了OAuth2.0认证、健康检查、SQL优化和索引健康检测等高级功能，使数据库管理和维护更加安全、智能化。

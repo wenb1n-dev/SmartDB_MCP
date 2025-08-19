@@ -23,16 +23,16 @@ Compared to similar products, SmartDB not only provides basic database connectio
 | SQL Server | √ | Microsoft SQL Server 2012+ |
 
 ## Tool List
-| Tool Name | Description |
-|-----------|-------------|
+| Tool Name | Description                                                                                                                                                                                   |
+|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | execute_sql | SQL execution tool that can execute ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", "TRUNCATE"] commands based on permission configuration |
-| get_db_health | Analyzes database health status (connection status, transaction status, running status, lock detection) and outputs professional diagnostic reports and solutions |
-| get_table_desc | Searches for table structures in the database based on table names, supports multi-table queries |
-| get_table_index | Searches for table indexes in the database based on table names, supports multi-table queries |
-| get_table_name | Database table name query tool. Used to query all table names in the database or search for corresponding table names based on Chinese table names or table descriptions |
-| get_db_version | Database version query tool |
-| sql_creator | SQL query generation tool that generates corresponding SQL query statements based on different database types |
-| sql_optimize ｜ A professional SQL performance optimization tool that provides expert optimization suggestions based on execution plans, table structure information, table data volume, and table indexes.｜
+| get_db_health | Analyzes database health status (connection status, transaction status, running status, lock detection) and outputs professional diagnostic reports and solutions                             |
+| get_table_desc | Searches for table structures in the database based on table names, supports multi-table queries                                                                                              |
+| get_table_index | Searches for table indexes in the database based on table names, supports multi-table queries                                                                                                 |
+| get_table_name | Database table name query tool. Used to query all table names in the database or search for corresponding table names based on Chinese table names or table descriptions                      |
+| get_db_version | Database version query tool                                                                                                                                                                   |
+| sql_creator | SQL query generation tool that generates corresponding SQL query statements based on different database types                                                                                 |
+| sql_optimize | A professional SQL performance optimization tool that provides expert optimization suggestions based on execution plans, table structure information, table data volume, and table indexes.   | 
 
 ## Usage
 
