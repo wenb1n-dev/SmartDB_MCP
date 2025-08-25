@@ -2,7 +2,28 @@ from abc import ABC, abstractmethod
 from typing import ClassVar, Dict, Type
 
 from config.dbconfig import get_db_config_by_name
-from databases.base.base import TableDescription, DatabaseVersion, TableName, TableIndex, DatabaseHealth
+from databases.base.base import (
+    TableDescription,
+    DatabaseVersion,
+    TableName,
+    TableIndex,
+    DatabaseHealth,
+    SqlOptimize,
+)
+
+# 用于存储需要延迟注册的工厂类
+_pending_factories = []
+
+
+def register_all_factories():
+    """注册所有待注册的工厂类
+    
+    此函数应在所有数据库工厂类导入完成后调用，以确保所有工厂类都被正确注册
+    """
+    for factory_cls in _pending_factories:
+        FactoryRegistry.register(factory_cls)
+    # 清空待注册列表
+    _pending_factories.clear()
 
 
 class FactoryRegistry:
@@ -44,8 +65,10 @@ class DatabaseOperationFactory(ABC):
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
+        # 不在子类定义时自动注册，避免循环导入问题
+        # 将子类添加到待注册列表中，稍后统一注册
         if cls.name:
-            FactoryRegistry.register(cls)
+            _pending_factories.append(cls)
 
     @abstractmethod
     def create_db_version(self) -> "DatabaseVersion":
@@ -61,6 +84,9 @@ class DatabaseOperationFactory(ABC):
         pass
     @abstractmethod
     def create_db_health(self) -> "DatabaseHealth":
+        pass
+    @abstractmethod
+    def create_sql_optimize(self) -> "SqlOptimize":
         pass
 
     @classmethod

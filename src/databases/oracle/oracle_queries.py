@@ -59,6 +59,7 @@ class OracleQueries:
                SELECT
                     col.table_name,
                     col.column_name,
+                    col.DATA_TYPE,
                     com.comments AS column_comment
                 FROM
                     all_tab_cols col
@@ -337,4 +338,25 @@ class OracleQueries:
     def get_sga_total():
         return """
         SELECT * FROM v$sga
+        """
+
+    @staticmethod
+    def get_table_size(database: str, table_names: List[str]):
+        table_condition = "','".join(table_names)
+
+        return f"""
+        SELECT
+            owner,
+            segment_name AS "Table",
+            ROUND(SUM(bytes) / 1024 / 1024, 2) AS "Size (MB)"
+        FROM
+            dba_segments
+        WHERE
+            segment_type = 'TABLE'
+        AND segment_name IN ('{table_condition}')
+        AND OWNER = '{database}'
+        GROUP BY
+            owner, segment_name
+        ORDER BY
+            SUM(bytes) DESC
         """

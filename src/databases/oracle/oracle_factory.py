@@ -1,10 +1,18 @@
-from databases.base.base import DatabaseVersion, TableDescription, TableName, TableIndex, DatabaseHealth
+from databases.base.base import (
+    DatabaseVersion,
+    TableDescription,
+    TableName,
+    TableIndex,
+    DatabaseHealth,
+    SqlOptimize,
+)
 from databases.database_factory import DatabaseOperationFactory
 from databases.oracle.oracle_db_version import OracleDatabaseVersionTool
 from databases.oracle.oracle_health import OracleHealth
 from databases.oracle.oracle_table_description import OracleTableDescription
 from databases.oracle.oracle_table_index import OracleTableIndex
 from databases.oracle.oracle_table_name import OracleTableName
+from databases.oracle.oracle_optimize import OracleSqlOptimize
 
 
 class OracleFactory(DatabaseOperationFactory):
@@ -23,3 +31,6 @@ class OracleFactory(DatabaseOperationFactory):
 
     def create_db_health(self) -> DatabaseHealth:
         return OracleHealth()
+
+    def create_sql_optimize(self) -> SqlOptimize:
+        return OracleSqlOptimize()

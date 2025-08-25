@@ -3,10 +3,9 @@ import contextlib
 import os
 
 from collections.abc import AsyncIterator
-from starlette.responses import Response, HTMLResponse
+from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
-from starlette.requests import Request
-from starlette.routing import Route, Mount
+
 
 import click
 import uvicorn
@@ -23,11 +22,11 @@ from starlette.routing import Route, Mount
 from starlette.types import Scope, Receive, Send
 from starlette.middleware import Middleware
 
-from config.event_store import InMemoryEventStore
 from connection.pool_manager import MultiDBPoolManager
-
-
 from tools.base import ToolRegistry
+from config.event_store import InMemoryEventStore
+
+
 
 # 初始化服务器
 app = Server("SmartDB_MCP")
@@ -152,12 +151,48 @@ def run_streamable_http(json_response: bool, oauth: bool):
         routes.append(Route("/login", endpoint=login_page, methods=["GET"]))
         routes.append(Route("/mcp/authorize", endpoint=login, methods=["POST"]))
 
-        # 添加静态文件路由，用于提供Vue构建后的文件
-        static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
-        if os.path.exists(static_dir):
-            routes.append(Mount("/", app=StaticFiles(directory=static_dir, html=True)))
-
     routes.append(Mount("/mcp", app=handle_streamable_http))
+
+    if oauth:
+        # 添加静态文件路由，用于提供Vue构建后的文件
+        # 在打包后的环境中，静态文件位于site-packages/static/目录下
+        static_dir = None
+        try:
+            # 尝试从包资源中获取静态文件路径
+            import importlib.resources
+            static_path = importlib.resources.files('static')
+
+            # 尝试多种方法获取实际路径
+            static_dir = None
+            if hasattr(static_path, '__fspath__'):
+                static_dir = static_path.__fspath__()
+            elif hasattr(static_path, '_path'):
+                static_dir = static_path._path
+            elif hasattr(static_path, '_paths') and static_path._paths:
+                static_dir = static_path._paths[0]
+            else:
+                # 如果都失败了，直接使用字符串转换
+                static_dir = str(static_path)
+                # 移除可能的 MultiplexedPath 前缀
+                if 'MultiplexedPath(' in static_dir:
+                    static_dir = static_dir.split('MultiplexedPath(')[1].split(')')[0]
+
+            if os.path.exists(static_dir):
+                routes.append(Mount("/", app=StaticFiles(directory=static_dir, html=True)))
+        except Exception:
+            # 如果包资源方式失败，尝试直接使用site-packages路径
+            import sys
+            for path in sys.path:
+                if 'site-packages' in path:
+                    static_dir = os.path.join(path, 'static')
+                    if os.path.exists(static_dir):
+                        routes.append(Mount("/", app=StaticFiles(directory=static_dir, html=True)))
+                        break
+            else:
+                # 如果都失败了，尝试相对路径
+                static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+                if os.path.exists(static_dir):
+                    routes.append(Mount("/", app=StaticFiles(directory=static_dir, html=True)))
 
     # 创建应用实例
     starlette_app = Starlette(

@@ -1,7 +1,10 @@
+[![简体中文](https://img.shields.io/badge/简体中文-点击查看-orange)](README-zh.md)
+[![English](https://img.shields.io/badge/English-Click-yellow)](README.md)
+
 <img width="1023" height="270" alt="image" src="https://github.com/user-attachments/assets/4b282174-dd45-4edb-9de8-9b14e2c59a9e" />
 
 # SmartDB
-
+## 好用就帮忙点个赞，支持一下呀，拜托各位精英们～。
 SmartDB是一个通用数据库网关，实现了模型上下文协议（Model Context Protocol，简称MCP）服务器接口。这个网关允许与MCP兼容的客户端连接并探索不同的数据库。
 
 与同类产品相比，SmartDB不仅提供基本的数据库连接和探索功能，还增加了OAuth2.0认证、健康检查、SQL优化和索引健康检测等高级功能，使数据库管理和维护更加安全、智能化。
@@ -18,16 +21,16 @@ SmartDB是一个通用数据库网关，实现了模型上下文协议（Model C
 | SQL Server | √  | Microsoft SQL Server 2012 + |
 
 # 工具列表
-| 工具名称                  | 描述                                                                                                                                 |
-|-----------------------|------------------------------------------------------------------------------------------------------------------------------------| 
-| execute_sql           | sql执行工具，根据权限配置可执行["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", "TRUNCATE"] 命令 |
-| get_db_health | 分析数据库的健康状态（连接情况、事务情况、运行情况、锁情况检测），输出专业的诊断报告及解决方案                                                                                    |
-| get_table_desc        | 根据表名搜索数据库中对应的表结构,支持多表查询                                                                                                            |
-| get_table_index       | 根据表名搜索数据库中对应的表索引,支持多表查询                                                                                                            |
-| get_table_name        | 数据库表名查询工具。用于查询数据库中的所有表名或将根据表的中文名称或表描述搜索数据库中对应的表名                                                                                   |
-| get_db_version | 数据库版本查询工具                                                                                                                          |
-| sql_creator | SQL查询生成工具，根据不同的数据库类型生成对应SQL查询语句                                                                                                    
-
+| 工具名称            | 描述                                                                                                                                 |
+|-----------------|------------------------------------------------------------------------------------------------------------------------------------| 
+| execute_sql     | sql执行工具，根据权限配置可执行["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", "TRUNCATE"] 命令 |
+| get_db_health   | 分析数据库的健康状态（连接情况、事务情况、运行情况、锁情况检测），输出专业的诊断报告及解决方案                                                                                    |
+| get_table_desc  | 根据表名搜索数据库中对应的表结构,支持多表查询                                                                                                            |
+| get_table_index | 根据表名搜索数据库中对应的表索引,支持多表查询                                                                                                            |
+| get_table_name  | 数据库表名查询工具。用于查询数据库中的所有表名或将根据表的中文名称或表描述搜索数据库中对应的表名                                                                                   |
+| get_db_version  | 数据库版本查询工具                                                                                                                          |
+| sql_creator     | SQL查询生成工具，根据不同的数据库类型生成对应SQL查询语句                                                                                                    
+| sql_optimize    | 专业的SQL性能优化工具，基于执行计划、表结构信息、表数据量、表索引提供专家级优化建议                                                                                        | 
 
 # 使用方法
 ## env 配置文件说明
@@ -141,9 +144,32 @@ OAUTH_USER_PASSWORD=wenb1n
 | schema | PostgreSQL, SQL Server | 否 | string | 数据库模式 |
 | service_name | Oracle | 否 | string | Oracle服务名 |
 
+* role 权限控制配置项以及对应数据库权限：只读（readonly）、读写（writer）、管理员（admin）
+```
+    "readonly": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN"],  # 只读权限
+    "writer": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE"],  # 读写权限
+    "admin": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE", 
+             "CREATE", "ALTER", "DROP", "TRUNCATE"]  # 管理员权限
+```
+   
 * 注意
 
 default 为默认数据库连接配置，必须配置，其他数据库配置请自行添加 
+
+## pip安装和配置
+1. 安装包
+```bash
+pip install SmartDB-MCP
+
+参数说明
+--mode：传输模式（“stdio”，“sse”，“streamablehttp”）
+--envfile 环境变量文件路径
+--oauth 启用 oauth 认证（目前仅支持“streamablehttp”模式）
+
+启动命令：
+ smartdb --envfile=/Volumes/config/.env --oauth=true
+
+```
 
 ## docker 启动
 ### 快速开始
@@ -229,7 +255,7 @@ mcp json 如下
       "name": "smartdb",
       "description": "",
       "isActive": true,
-      "url": "http://localhost:9000/sse"
+      "url": "http://localhost:3000/sse"
     }
   }
 }
@@ -318,12 +344,16 @@ uv run -m core.server --oauth=true
    <img width="1130" height="805" alt="image" src="https://github.com/user-attachments/assets/e6419269-16c1-4a3b-aa73-d74647fe1bbd" />
 
 3. 查询其他连接池、其他库的表数据
-  <img width="1127" height="668" alt="image" src="https://github.com/user-attachments/assets/dd5cfea9-4d9b-46eb-b1cc-ad38963ed671" />
+   <img width="1127" height="668" alt="image" src="https://github.com/user-attachments/assets/dd5cfea9-4d9b-46eb-b1cc-ad38963ed671" />
 
 4. 修改表数据
-  <img width="1138" height="696" alt="image" src="https://github.com/user-attachments/assets/930fb947-656f-41a7-93fa-2b83dd64b4ec" />
+   <img width="1138" height="696" alt="image" src="https://github.com/user-attachments/assets/930fb947-656f-41a7-93fa-2b83dd64b4ec" />
 
 5. 数据库健康检测
-  <img width="1119" height="3264" alt="image" src="https://github.com/user-attachments/assets/d065173b-140c-44f1-9ce8-16ac61562b38" />
+   <img width="1119" height="3264" alt="image" src="https://github.com/user-attachments/assets/d065173b-140c-44f1-9ce8-16ac61562b38" />
+
+6. sql优化
+   <img width="1570" height="4107" alt="image" src="https://github.com/user-attachments/assets/594975e7-b040-4ccc-8e31-9423e6597ec2" />
+
 
 

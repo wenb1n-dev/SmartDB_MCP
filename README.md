@@ -1,3 +1,6 @@
+[![简体中文](https://img.shields.io/badge/简体中文-点击查看-orange)](README-zh.md)
+[![English](https://img.shields.io/badge/English-Click-yellow)](README.md)
+
 <img width="1023" height="270" alt="image" src="https://github.com/user-attachments/assets/4b282174-dd45-4edb-9de8-9b14e2c59a9e" />
 
 
@@ -20,15 +23,16 @@ Compared to similar products, SmartDB not only provides basic database connectio
 | SQL Server | √ | Microsoft SQL Server 2012+ |
 
 ## Tool List
-| Tool Name | Description |
-|-----------|-------------|
+| Tool Name | Description                                                                                                                                                                                   |
+|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | execute_sql | SQL execution tool that can execute ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", "TRUNCATE"] commands based on permission configuration |
-| get_db_health | Analyzes database health status (connection status, transaction status, running status, lock detection) and outputs professional diagnostic reports and solutions |
-| get_table_desc | Searches for table structures in the database based on table names, supports multi-table queries |
-| get_table_index | Searches for table indexes in the database based on table names, supports multi-table queries |
-| get_table_name | Database table name query tool. Used to query all table names in the database or search for corresponding table names based on Chinese table names or table descriptions |
-| get_db_version | Database version query tool |
-| sql_creator | SQL query generation tool that generates corresponding SQL query statements based on different database types |
+| get_db_health | Analyzes database health status (connection status, transaction status, running status, lock detection) and outputs professional diagnostic reports and solutions                             |
+| get_table_desc | Searches for table structures in the database based on table names, supports multi-table queries                                                                                              |
+| get_table_index | Searches for table indexes in the database based on table names, supports multi-table queries                                                                                                 |
+| get_table_name | Database table name query tool. Used to query all table names in the database or search for corresponding table names based on Chinese table names or table descriptions                      |
+| get_db_version | Database version query tool                                                                                                                                                                   |
+| sql_creator | SQL query generation tool that generates corresponding SQL query statements based on different database types                                                                                 |
+| sql_optimize | A professional SQL performance optimization tool that provides expert optimization suggestions based on execution plans, table structure information, table data volume, and table indexes.   | 
 
 ## Usage
 
@@ -141,9 +145,33 @@ The following table details the meaning and usage of each parameter in the datab
 | schema | PostgreSQL, SQL Server | No | string | Database schema |
 | service_name | Oracle | No | string | Oracle service name |
 
+* role permission control configuration items and corresponding database permissions: readonly (readonly), read/write (writer), administrator (admin)
+```
+    "readonly": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN"],  # readonly permission
+    "writer": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE"],  # read/write permission
+    "admin": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE", 
+             "CREATE", "ALTER", "DROP", "TRUNCATE"]  # administrator permission
+```
+
 * Note
 
 "default" is the default database connection configuration and must be configured. Other database configurations should be added as needed.
+
+## pip installation and configuration
+
+```bash
+pip install SmartDB-MCP
+
+Parameter explanation
+--mode: transmission mode ("stdio", "sse", "streamablehttp")
+--envfile path of the environment variable file
+--oauth enable oauth authentication (currently only supported in "streamablehttp" mode)
+
+Start command:
+ smartdb --envfile=/Volumes/config/.env --oauth=true
+
+
+```
 
 ## Docker Startup
 
@@ -230,7 +258,7 @@ MCP JSON as follows:
       "name": "smartdb",
       "description": "",
       "isActive": true,
-      "url": "http://localhost:9000/sse"
+      "url": "http://localhost:3000/sse"
     }
   }
 }
@@ -325,4 +353,8 @@ uv run -m core.server --oauth=true
 4. Query database health status
 <img width="1140" height="2560" alt="image" src="https://github.com/user-attachments/assets/fa55271c-94ad-4079-a9eb-c68a8e607111" />
 
+5. Sql Optimize
+<img width="1554" height="3613" alt="image" src="https://github.com/user-attachments/assets/58d9c835-160c-44b3-b97c-0e46830ea438" />
+
+   
    
