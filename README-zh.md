@@ -177,6 +177,11 @@ pip install SmartDB-MCP
 #### 1. 构建并启动服务
 
 ```bash
+# 修改自己的数据库连接配置文件路径
+修改[docker-compose.yml] 中
+    volumes:
+      - 你的外部database_config.json地址:/app/config/database_config.json
+
 # 使用docker-compose启动服务
 docker-compose up -d
 
