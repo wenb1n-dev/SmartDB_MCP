@@ -12,8 +12,9 @@ from .mysql.mysql_factory import MySQLFactory
 from .postgresql.postgresql_factory import PostgresqlFactory
 from .oracle.oracle_factory import OracleFactory
 from .mssqlserver.sqlserver_factory import MSSQLServerFactory
+from .dameng.dameng_factory import DamengFactory
 
 # 最后注册所有工厂类
 register_all_factories()
 
-__all__ = ['DatabaseOperationFactory', 'MySQLFactory', 'PostgresqlFactory', 'OracleFactory', 'MSSQLServerFactory']
+__all__ = ['DatabaseOperationFactory', 'MySQLFactory', 'PostgresqlFactory', 'OracleFactory', 'MSSQLServerFactory', 'DamengFactory']

@@ -2,13 +2,13 @@ from config.dbconfig import get_db_config_by_name
 from databases.base.base import DatabaseHealth
 from typing import Dict, Any
 
-from databases.oracle.oracle_queries import OracleQueries
+from databases.dameng.dameng_queries import DamengQueries
 from utils.execute_sql_util import ExecuteSqlUtil
 
 
-class OracleHealth(DatabaseHealth):
+class DamengHealth(DatabaseHealth):
     """
-    Oracle数据库健康检查类
+    达梦数据库健康检查类
     """
 
     def get_db_health(self, pool_name: str, health_type: str) -> str:
@@ -23,7 +23,7 @@ class OracleHealth(DatabaseHealth):
             健康检查结果
         """
         db_config = get_db_config_by_name(pool_name)
-        
+
         # 定义类型到方法的映射
         health_methods = {
             "connection": self.get_db_connection,
@@ -55,66 +55,71 @@ class OracleHealth(DatabaseHealth):
             连接情况分析结果
         """
         # 当前连接数
-        current_connections_sql = OracleQueries.get_current_connections()
+        current_connections_sql = DamengQueries.get_current_connections()
         current_connections_result = ExecuteSqlUtil.execute_single_statement(pool_name, current_connections_sql)
 
         # 最大连接数
-        max_connections_sql = OracleQueries.get_max_connections()
+        max_connections_sql = DamengQueries.get_max_connections()
         max_connections_result = ExecuteSqlUtil.execute_single_statement(pool_name, max_connections_sql)
 
+        # 当前会话数
+        active_session_sql = DamengQueries.get_active_session()
+        active_session_result = ExecuteSqlUtil.execute_single_statement(pool_name, active_session_sql)
+
         # 构建结果字符串
         result_parts = []
-        result_parts.append("- 当前用户连接数:")
+        result_parts.append("- 当前用户连接情况:")
         result_parts.append(ExecuteSqlUtil.format_result(current_connections_result))
-        result_parts.append("- processes资源的当前使用情况和限制:")
+        result_parts.append("- 最大连接数限制:")
         result_parts.append(ExecuteSqlUtil.format_result(max_connections_result))
+        result_parts.append("- 当前活跃会话:")
+        result_parts.append(ExecuteSqlUtil.format_result(active_session_result))
 
         return "\n".join(result_parts)
+
 
     def get_db_blocking(self, pool_name: str, db_config: Dict[str, Any]) -> str:
-        blocking_sql = OracleQueries.get_blocking()
+       
+        blocking_sql = DamengQueries.get_lock_info()
         blocking_result = ExecuteSqlUtil.execute_single_statement(pool_name, blocking_sql)
 
-        locking_sql = OracleQueries.get_locking()
+        locking_sql = DamengQueries.get_locking_session()
         locking_result = ExecuteSqlUtil.execute_single_statement(pool_name, locking_sql)
 
-        trx_sql = OracleQueries.get_trx()
-        trx_result = ExecuteSqlUtil.execute_single_statement(pool_name, trx_sql)
 
         # 构建结果字符串
         result_parts = []
-        result_parts.append("- 递归阻塞链信息")
+        result_parts.append("- 锁对象详情:")
         result_parts.append(ExecuteSqlUtil.format_result(blocking_result))
-        result_parts.append("- 被锁对象详情:")
+        result_parts.append("- 递归阻塞链信息")
         result_parts.append(ExecuteSqlUtil.format_result(locking_result))
-        result_parts.append("- 超过5分钟的事务:")
-        result_parts.append(ExecuteSqlUtil.format_result(trx_result))
+
 
         return "\n".join(result_parts)
+        
 
     def get_db_resources(self, pool_name: str, db_config: Dict[str, Any]) -> str:
 
-        buffer_pool_sql = OracleQueries.get_buffer_pool()
+        buffer_pool_sql = DamengQueries.get_buffer_pool()
         buffer_pool_result = ExecuteSqlUtil.execute_single_statement(pool_name, buffer_pool_sql)
 
-        tmp_sql = OracleQueries.get_tmp_table()
+        tmp_sql = DamengQueries.get_tmp_table()
         tmp_result = ExecuteSqlUtil.execute_single_statement(pool_name, tmp_sql)
 
-        table_space_sql = OracleQueries.get_table_space()
+        table_space_sql = DamengQueries.get_table_space()
         table_space_result = ExecuteSqlUtil.execute_single_statement(pool_name, table_space_sql)
 
-        io_sql = OracleQueries.get_io_info()
+        io_sql = DamengQueries.get_io_info()
         io_result = ExecuteSqlUtil.execute_single_statement(pool_name, io_sql)
 
-        sga_status_sql = OracleQueries.get_sga_status()
+        sga_status_sql = DamengQueries.get_sga_status()
         sga_status_result = ExecuteSqlUtil.execute_single_statement(pool_name, sga_status_sql)
 
-        pga_status_sql = OracleQueries.get_pga_status()
+        pga_status_sql = DamengQueries.get_pga_status()
         pga_status_result = ExecuteSqlUtil.execute_single_statement(pool_name, pga_status_sql)
 
-        sga_total_sql = OracleQueries.get_sga_total()
+        sga_total_sql = DamengQueries.get_sga_total()
         sga_total_result = ExecuteSqlUtil.execute_single_statement(pool_name, sga_total_sql)
-
 
         # 构建结果字符串
         result_parts = []

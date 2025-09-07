@@ -76,7 +76,7 @@ def _validate_db_configs(db_configs: Dict[str, Dict[str, Any]]) -> Dict[str, Dic
         }
         
         # 验证必需字段
-        if not all([validated_config["user"], validated_config["password"], validated_config["database"]]):
+        if not all([validated_config["user"], validated_config["password"]]):
             raise ValueError(f"数据库 '{db_name}' 缺少必需的配置信息")
         
         validated_configs[db_name] = validated_config

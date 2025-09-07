@@ -75,6 +75,29 @@ class MSSQLServerPoolCreator(DatabasePoolCreator):
             pool_timeout=config.get("pool_timeout", 30)
         )
 
+
+class DamengPoolCreator(DatabasePoolCreator):
+    """达梦数据库连接池创建器"""
+    def create_pool(self, pool_name: str, config: Dict[str, Any]) -> SQLAlchemyConnectionPool:
+        user = quote_plus(config['user'])
+        password = quote_plus(config['password'])
+        database_url = f"dm+dmPython://{user}:{password}@{config['host']}:{config['port']}"
+        
+        # 获取schema配置，如果存在则通过connect_args传递
+        connect_args = {}
+        if 'schema' in config:
+            connect_args['schema'] = config['schema']
+
+        return SQLAlchemyConnectionPool(
+            database_url=database_url,
+            pool_type=config.get("pool_type", "queue"),
+            pool_size = config.get("pool_size", 10),
+            max_overflow = config.get("max_overflow", 20),
+            pool_recycle = config.get("pool_recycle", 3600),
+            pool_timeout = config.get("pool_timeout", 30),
+            connect_args=connect_args
+        )
+
 class DatabasePoolFactory:
     """数据库连接池工厂类"""
 
@@ -82,7 +105,8 @@ class DatabasePoolFactory:
         "mysql": MySQLPoolCreator(),
         "postgresql": PostgreSQLPoolCreator(),
         "oracle": OraclePoolCreator(),
-        "mssqlserver": MSSQLServerPoolCreator()
+        "mssqlserver": MSSQLServerPoolCreator(),
+        "dameng": DamengPoolCreator()
     }
     @classmethod
     def create_pool(cls, db_type: str, pool_name: str, config: Dict[str, Any]) -> SQLAlchemyConnectionPool:

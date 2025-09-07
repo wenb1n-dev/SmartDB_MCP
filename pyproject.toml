@@ -19,7 +19,10 @@ dependencies = [
     "pymssql>=2.3.7",
     "pyodbc >=5.2.0",
     "pydantic-settings~=2.10.1",
-    "click~=8.2.1"
+    "click~=8.2.1",
+    "dmSQLAlchemy>=2.0.0",
+    "dmPython>=2.5.22",
+    "setuptools>=80.9.0"
 ]
 
 [[project.authors]]

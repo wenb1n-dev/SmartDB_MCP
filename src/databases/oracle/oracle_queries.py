@@ -360,3 +360,40 @@ class OracleQueries:
         ORDER BY
             SUM(bytes) DESC
         """
+
+    @staticmethod
+    def get_table_space():
+        return """
+        SELECT
+            upper(f.tablespace_name) AS "表空间名称",
+            round(d.availb_bytes, 4) AS "表空间分配大小(G)",
+            round((d.availb_bytes - f.free_bytes), 4) AS "分配空间已使用大小(G)",
+            round(f.free_bytes, 4) AS "分配空间剩余大小(G)",
+            to_char(round((d.availb_bytes - f.free_bytes) / d.availb_bytes * 100,2),'999.99') || '%' AS "分配空间使用率",
+            round((d.max_bytes - d.availb_bytes + f.free_bytes), 4) AS "可用空间大小(G)",
+            round(d.max_bytes, 4) AS "表空间最大大小(G)",
+            to_char(round((d.max_bytes - d.availb_bytes + f.free_bytes) / d.max_bytes * 100,4),'999.9999') || '%' AS "表空间空闲率"
+        FROM
+            (
+            SELECT
+                tablespace_name,
+                round(sum(bytes) / (1024 * 1024 * 1024), 6) free_bytes,
+                round(max(bytes) / (1024 * 1024 * 1024), 6) max_bytes
+            FROM
+                sys.dba_free_space
+            GROUP BY
+                tablespace_name) f,
+            (
+            SELECT
+                dd.tablespace_name,
+                round(sum(dd.bytes) / (1024 * 1024 * 1024), 6) availb_bytes,
+                round(sum(decode(dd.maxbytes, 0, dd.bytes, dd.maxbytes)) / (1024 * 1024 * 1024), 6) max_bytes
+            FROM
+                sys.dba_data_files dd
+            GROUP BY
+                dd.tablespace_name) d
+        WHERE
+            d.tablespace_name = f.tablespace_name
+        ORDER BY
+            3 DESC;
+        """
