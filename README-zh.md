@@ -19,6 +19,7 @@ SmartDB是一个通用数据库网关，实现了模型上下文协议（Model C
 | PostgreSQL | √  | PostgreSQL 9.6+、YMatrix 均支持 |
 | Oracle | √  | Oracle 12 +                 |
 | SQL Server | √  | Microsoft SQL Server 2012 + |
+| 达梦数据库 | √  | DM8                         |
 
 # 工具列表
 | 工具名称            | 描述                                                                                                                                 |

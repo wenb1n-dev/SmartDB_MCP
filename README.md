@@ -14,12 +14,13 @@ Compared to similar products, SmartDB not only provides basic database connectio
 
 
 ## Currently Supported Databases
-| Database | Support | Description |
-|----------|---------|-------------|
-| MySQL | √ | Supports MySQL 5.6+, MariaDB 10+ |
+| Database   | Support | Description              |
+|------------|---------|--------------------------|
+| MySQL      | √ | Supports MySQL 5.6+, MariaDB 10+ |
 | PostgreSQL | √ | Supports PostgreSQL 9.6+, YMatrix |
-| Oracle | √ | Oracle 12+ |
+| Oracle     | √ | Oracle 12+               |
 | SQL Server | √ | Microsoft SQL Server 2012+ |
+| Dameng     | √ | Dameng 8.0+              |
 
 ## Tool List
 | Tool Name | Description                                                                                                                                                                                   |
