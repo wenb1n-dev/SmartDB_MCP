@@ -10,8 +10,7 @@ SmartDB is a universal database gateway that implements the Model Context Protoc
 
 Compared to similar products, SmartDB not only provides basic database connection and exploration capabilities but also adds advanced features such as OAuth 2.0 authentication , health checks, SQL optimization, and index health detection, making database management and maintenance more secure and intelligent.
 
-<img width="1295" height="685" alt="image" src="https://github.com/user-attachments/assets/3c06b0f7-11a8-444e-a50a-9e616af16467" />
-
+<img width="1303" height="697" alt="image" src="https://github.com/user-attachments/assets/9340f85e-28b0-45f2-8cb2-768b0d1c8b5c" />
 
 
 ## Currently Supported Databases
