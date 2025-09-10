@@ -9,7 +9,7 @@ services:
     ports:
       - "3000:3000"  # 如果你的应用监听 3000 端口，请根据实际情况调整
     volumes:
-      - /Volumes/xwbData/data/code/myself/python/SmartDB/src/config/database_config.json:/app/config/database_config.json
+      - ./src/config/database_config.json:/app/config/database_config.json
     environment:
       DATABASE_CONFIG_FILE: ${DATABASE_CONFIG_FILE:-/app/config/database_config.json}
       CLIENT_ID: ${CLIENT_ID:-smart_db_client_id}
