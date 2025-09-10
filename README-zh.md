@@ -9,7 +9,7 @@ SmartDB是一个通用数据库网关，实现了模型上下文协议（Model C
 
 与同类产品相比，SmartDB不仅提供基本的数据库连接和探索功能，还增加了OAuth2.0认证、健康检查、SQL优化和索引健康检测等高级功能，使数据库管理和维护更加安全、智能化。
 
-<img width="1295" height="685" alt="image" src="https://github.com/user-attachments/assets/3c06b0f7-11a8-444e-a50a-9e616af16467" />
+<img width="1303" height="697" alt="image" src="https://github.com/user-attachments/assets/9340f85e-28b0-45f2-8cb2-768b0d1c8b5c" />
 
 
 # 目前支持的数据库
