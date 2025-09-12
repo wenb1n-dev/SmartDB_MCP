@@ -270,10 +270,10 @@ Start command:
 uv sync
 
 # Start
-uv run -m mysql_mcp_server_pro.server --mode sse
+uv run -m core.server --mode sse
 
 # Custom env file location
-uv run -m mysql_mcp_server_pro.server --mode sse --envfile /path/to/.env
+uv run -m core.server --mode sse --envfile /path/to/.env
 ```
 
 ### Local Development STDIO Mode
