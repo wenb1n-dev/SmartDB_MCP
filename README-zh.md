@@ -273,10 +273,10 @@ mcp json 如下
 uv sync
 
 # 启动
-uv run -m mysql_mcp_server_pro.server --mode sse
+uv run -m core.server --mode sse
 
 # 自定义env文件位置
-uv run -m mysql_mcp_server_pro.server --mode sse --envfile /path/to/.env
+uv run -m core.server --mode sse --envfile /path/to/.env
 ```
 
 ### 本地开发 STDIO 方式 
