@@ -1,7 +1,6 @@
-[![MSeeP.ai Security Assessment Badge](https://mseep.net/pr/wenb1n-dev-smartdb-mcp-badge.png)](https://mseep.ai/app/wenb1n-dev-smartdb-mcp)
-
 [![简体中文](https://img.shields.io/badge/简体中文-点击查看-orange)](README-zh.md)
 [![English](https://img.shields.io/badge/English-Click-yellow)](README.md)
+[![MSeeP.ai Security Assessment Badge](MSeeP.ai)](https://mseep.ai/app/wenb1n-dev-smartdb-mcp)
 
 <img width="1023" height="270" alt="image" src="https://github.com/user-attachments/assets/4b282174-dd45-4edb-9de8-9b14e2c59a9e" />
 
