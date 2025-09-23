@@ -287,24 +287,23 @@ mcp json 如下
 ```
 {
   "mcpServers": {
-      "smartdb": {
-          "name": "smartdb",
-          "type": "stdio",
-          "isActive": false,
-          "registryUrl": "",
-          "command": "uv",
-          "args": [
-            "--directory",
-            "/Volumes/python/SmartDB/",
-            "run",
-            "-m",
-            "core.server",
-            "--mode",
-            "stdio"
-          ],
-          "env": {
-            "DATABASE_CONFIG_FILE": "/Volumes/database_config.json"
-          }
+    "smartdb": {
+      "name": "smartdb",
+      "type": "stdio",
+      "isActive": false,
+      "registryUrl": "",
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Volumes/python/SmartDB/",
+        "run",
+        "-m",
+        "core.server",
+        "--mode",
+        "stdio"
+      ],
+      "env": {
+        "DATABASE_CONFIG_FILE": "/Volumes/database_config.json"
       }
     }
   }
