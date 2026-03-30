@@ -158,6 +158,10 @@ The following table details the meaning and usage of each parameter in the datab
 
 "default" is the default database connection configuration and must be configured. Other database configurations should be added as needed.
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/wenb1n-dev-smartdb-mcp).
+
 ## pip installation and configuration
 
 ```bash
