@@ -25,6 +25,10 @@ from starlette.middleware import Middleware
 from connection.pool_manager import MultiDBPoolManager
 from tools.base import ToolRegistry
 from config.event_store import InMemoryEventStore
+from config.dbconfig import get_db_config_by_name
+from config.settings import get_settings
+from datasource.base import Paradigm
+from databases.database_factory import FactoryRegistry
 
 
 
@@ -32,12 +36,37 @@ from config.event_store import InMemoryEventStore
 app = Server("SmartDB_MCP")
 
 
+def _get_registered_paradigms() -> list[Paradigm]:
+    """Collect all paradigms from registered connection pools.
+
+    Returns:
+        List of unique Paradigm values from all registered pools.
+    """
+    paradigms = []
+    seen = set()
+    for pool_name in MultiDBPoolManager.get_pool_names():
+        try:
+            db_config = get_db_config_by_name(pool_name)
+            db_type = db_config.get("type")
+            factory_class = FactoryRegistry._factory_classes.get(db_type)
+            if factory_class and factory_class.paradigm not in seen:
+                paradigms.append(factory_class.paradigm)
+                seen.add(factory_class.paradigm)
+        except Exception:
+            continue
+    return paradigms
+
+
 @app.list_tools()
 async def list_tools() -> list[Tool]:
     """
-        列出所有可用的MySQL操作工具
+        列出所有可用的工具，根据已注册连接池的范式动态过滤
     """
-    return ToolRegistry.get_all_tools()
+    paradigms = _get_registered_paradigms()
+    if not paradigms:
+        # Fallback: if no pools registered, show all tools
+        return ToolRegistry.get_all_tools()
+    return ToolRegistry.get_tools_by_paradigms(paradigms)
 
 
 @app.call_tool()
@@ -55,6 +84,23 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> Sequence[TextConten
         ValueError: 当指定了未知的工具名称时抛出异常
     """
     tool = ToolRegistry.get_tool(name)
+
+    # Paradigm validation: check if the tool is applicable for the target pool
+    pool_name = arguments.get("pool_name", "default")
+    try:
+        db_config = get_db_config_by_name(pool_name)
+        db_type = db_config.get("type")
+        factory_class = FactoryRegistry._factory_classes.get(db_type)
+        if factory_class:
+            pool_paradigm = factory_class.paradigm
+            if not ToolRegistry.is_tool_applicable(name, pool_paradigm):
+                return [TextContent(
+                    type="text",
+                    text=f"错误: 工具 '{name}' 不适用于范式 '{pool_paradigm.value}' 的数据源"
+                )]
+    except Exception:
+        # If we can't determine the paradigm, allow the call (backward compatibility)
+        pass
 
     return await tool.run_tool(arguments)
 
@@ -79,13 +125,19 @@ async def run_stdio():
         except Exception as e:
             print(f"服务器错误: {str(e)}")
             raise
+        finally:
+            # 优雅关闭：释放所有连接池资源
+            try:
+                MultiDBPoolManager.close_all()
+            except Exception as e:
+                print(f"关闭连接池时出错: {e}")
 
 
 def run_sse():
     """运行SSE(Server-Sent Events)模式的服务器
 
     启动一个支持SSE的Web服务器，允许客户端通过HTTP长连接接收服务器推送的消息
-    服务器默认监听0.0.0.0:3000
+    监听地址和端口通过 Settings (SERVER_HOST/SERVER_PORT) 配置
     """
     sse = SseServerTransport("/messages/")
 
@@ -108,7 +160,8 @@ def run_sse():
             Mount("/messages/", app=sse.handle_post_message)
         ],
     )
-    uvicorn.run(starlette_app, host="0.0.0.0", port=3000)
+    settings = get_settings()
+    uvicorn.run(starlette_app, host=settings.server_host, port=settings.server_port)
 
 def run_streamable_http(json_response: bool, oauth: bool):
     event_store = InMemoryEventStore()
@@ -137,6 +190,11 @@ def run_streamable_http(json_response: bool, oauth: bool):
     async def lifespan(app: Starlette) -> AsyncIterator[None]:
         async with session_manager.run():
             yield
+        # 优雅关闭：释放所有连接池资源
+        try:
+            MultiDBPoolManager.close_all()
+        except Exception as e:
+            print(f"关闭连接池时出错: {e}")
 
     routes = []
 
@@ -202,10 +260,11 @@ def run_streamable_http(json_response: bool, oauth: bool):
         lifespan=lifespan
     )
 
+    settings = get_settings()
     config = uvicorn.Config(
         app=starlette_app,
-        host="0.0.0.0",
-        port=3000,
+        host=settings.server_host,
+        port=settings.server_port,
         lifespan="on"
     )
 
@@ -230,6 +289,9 @@ def main(mode, envfile, oauth):
         # 拼接出 src/config/.env 的绝对路径
         env_path = os.path.join(src_dir, "config", ".env")
         load_dotenv(env_path)
+
+    # env 文件已加载，清空 Settings 缓存确保后续读取最新值
+    get_settings.cache_clear()
 
     # 启动时初始化全局连接池（单例）
     MultiDBPoolManager.init_from_config()

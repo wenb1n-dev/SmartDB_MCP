@@ -11,8 +11,8 @@ class MySQLTableName(TableName):
         if database is None:
             database = db_config.get("database")
 
-        sql = MySQLQueries.get_table_names(database, text)
+        sql, params = MySQLQueries.get_table_names(database, text)
 
-        sql_result = ExecuteSqlUtil.execute_single_statement(pool_name, sql)
+        sql_result = ExecuteSqlUtil.execute_single_statement(pool_name, sql, params)
 
         return ExecuteSqlUtil.format_result(sql_result)

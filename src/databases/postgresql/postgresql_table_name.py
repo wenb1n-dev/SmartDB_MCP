@@ -15,8 +15,8 @@ class PostgresqlTableName(TableName):
         if schema is None:
             schema = db_config.get("schema", "public")
 
-        sql = PostgresqlQueries.get_table_names(schema, text)
+        sql, params = PostgresqlQueries.get_table_names(schema, text)
 
-        sql_result = ExecuteSqlUtil.execute_single_statement(pool_name, sql)
+        sql_result = ExecuteSqlUtil.execute_single_statement(pool_name, sql, params)
 
         return ExecuteSqlUtil.format_result(sql_result)

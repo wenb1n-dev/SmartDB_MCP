@@ -3,15 +3,16 @@ from typing import Dict, Sequence, Any
 from mcp.types import TextContent, Tool
 
 from core.exceptions import SQLExecutionError
-from databases.database_factory import DatabaseOperationFactory
+from databases.database_factory import FactoryRegistry
 from tools.base import ToolsBase
 
 
 class DatabaseVersion(ToolsBase):
     """数据库版本查询工具类
-    
+
     该类用于查询指定连接池所连接的数据库版本信息。
     继承自ToolsBase基类，实现了获取工具描述和执行工具的核心方法。
+    支持所有范式的数据源（关系型/KV/文档等）。
     """
 
     # 工具名称
@@ -68,8 +69,8 @@ class DatabaseVersion(ToolsBase):
         pool_name = arguments["pool_name"]
 
         try:
-            # 根据连接池名称获取对应的数据库工厂实例
-            factory = DatabaseOperationFactory.get_factory_by_pool_name(pool_name)
+            # 根据连接池名称获取对应的数据源工厂实例（支持所有范式）
+            factory = FactoryRegistry.get_factory_by_pool_name(pool_name)
 
             # 创建数据库版本查询处理器实例
             handler = factory.create_db_version()
@@ -83,3 +84,5 @@ class DatabaseVersion(ToolsBase):
         # 捕获SQL执行错误并返回错误信息
         except SQLExecutionError as e:
             return [TextContent(type="text", text=str(e))]
+        except Exception as e:
+            return [TextContent(type="text", text=f"查询版本时出错: {str(e)}")]

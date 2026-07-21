@@ -3,6 +3,7 @@ from typing import Dict, Any, Sequence
 from mcp import Tool
 from mcp.types import TextContent
 
+from datasource.base import Paradigm
 from databases.database_factory import DatabaseOperationFactory
 from tools.base import ToolsBase
 
@@ -10,6 +11,8 @@ class SqlOptimize(ToolsBase):
 
     # 工具名称
     name = "sql_optimize"
+    # 仅适用于关系型数据库
+    applicable_paradigms = [Paradigm.RELATIONAL]
     # 工具描述，包含中英文说明和使用规范
     description = ("专业的SQL性能优化工具，基于执行计划、表结构信息、表数据量、表索引提供专家级优化建议。"
         "该工具能够分析SQL语句的执行效率，识别性能瓶颈，并提供具体的优化方案，"

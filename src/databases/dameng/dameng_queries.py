@@ -1,31 +1,27 @@
-from typing import List
+from typing import List, Tuple, Dict, Any
+
+from utils.sql_safety import build_in_params
 
 
 class DamengQueries:
     @staticmethod
     def get_db_version() -> str:
-        """
-        获取数据库版本的SQL查询
-
-        Returns:
-            SQL查询语句
-        """
+        """获取数据库版本的SQL查询"""
         return "SELECT * FROM V$INSTANCE"
 
     @staticmethod
-    def get_table_description(schema: str, table_names: List[str]) -> str:
-        """
-        获取表结构描述的SQL查询
+    def get_table_description(schema: str, table_names: List[str]) -> Tuple[str, Dict[str, Any]]:
+        """获取表结构描述的SQL查询（参数绑定防注入）
 
         Args:
-            database: 数据库名称
+            schema: 模式名称
             table_names: 表名列表
 
         Returns:
-            SQL查询语句
+            (SQL模板, 参数字典)
         """
-        table_condition = "','".join(table_names)
-        return f"""
+        in_clause, params = build_in_params("table_name", table_names)
+        sql = f"""
               SELECT A.COLUMN_NAME,
                 A.DATA_TYPE,
                 A.DATA_LENGTH,
@@ -33,72 +29,77 @@ class DamengQueries:
                 A.DATA_SCALE,
                 A.NULLABLE,
                 B.COMMENTS FROM ALL_TAB_COLUMNS A
-            LEFT JOIN ALL_COL_COMMENTS B 
-                ON A.TABLE_NAME = B.TABLE_NAME 
+            LEFT JOIN ALL_COL_COMMENTS B
+                ON A.TABLE_NAME = B.TABLE_NAME
                 AND A.COLUMN_NAME = B.COLUMN_NAME
-            WHERE A.TABLE_NAME in ( '{table_condition}')
-            AND B.SCHEMA_NAME = '{schema}'
+            WHERE A.TABLE_NAME IN {in_clause}
+            AND B.SCHEMA_NAME = :schema
                """
+        params["schema"] = schema
+        return sql, params
 
     @staticmethod
-    def get_table_names(schema: str, text: str) -> str:
-        """
-        根据注释获取表名的SQL查询
+    def get_table_names(schema: str, text: str) -> Tuple[str, Dict[str, Any]]:
+        """根据注释获取表名的SQL查询（参数绑定防注入）
 
         Args:
-            database: 数据库名称
+            schema: 模式名称
             text: 表注释关键词
 
         Returns:
-            SQL查询语句
+            (SQL模板, 参数字典)
         """
-
-        sql = f"""
-         SELECT 
+        sql = """
+         SELECT
             OWNER           AS TABLE_SCHEMA,
             TABLE_NAME,
             COMMENTS        AS TABLE_COMMENT
-        FROM 
+        FROM
             ALL_TAB_COMMENTS
-        WHERE 
-            OWNER = '{schema}'  
-            AND TABLE_TYPE = 'TABLE'  
+        WHERE
+            OWNER = :schema
+            AND TABLE_TYPE = 'TABLE'
          """
+        params: Dict[str, Any] = {"schema": schema}
 
         if "SEARCH_ALL_TABLES" != text:
-            sql += f"AND ( COMMENTS LIKE '%{text}%' or TABLE_NAME LIKE '%{text}%'); "
+            sql += " AND (COMMENTS LIKE :keyword OR TABLE_NAME LIKE :keyword)"
+            params["keyword"] = f"%{text}%"
 
-        return sql
+        return sql, params
 
     @staticmethod
-    def get_table_index(schema: str, table_names: List[str]):
-        table_condition = "','".join(table_names)
-        return f"""
-            SELECT 
+    def get_table_index(schema: str, table_names: List[str]) -> Tuple[str, Dict[str, Any]]:
+        """获取表索引的SQL查询（参数绑定防注入）"""
+        in_clause, params = build_in_params("table_name", table_names)
+        sql = f"""
+            SELECT
                 A.TABLE_NAME,
                 A.INDEX_NAME,
                 A.COLUMN_NAME,
                 A.COLUMN_POSITION AS SEQ_IN_INDEX,
-                CASE 
-                    WHEN B.UNIQUENESS = 'UNIQUE' THEN 0 
-                    ELSE 1 
+                CASE
+                    WHEN B.UNIQUENESS = 'UNIQUE' THEN 0
+                    ELSE 1
                 END AS NON_UNIQUE,
                 B.INDEX_TYPE
-            FROM 
+            FROM
                 ALL_IND_COLUMNS A
-            JOIN 
-                ALL_INDEXES B 
-                ON A.INDEX_OWNER = B.OWNER 
+            JOIN
+                ALL_INDEXES B
+                ON A.INDEX_OWNER = B.OWNER
                 AND A.INDEX_NAME = B.INDEX_NAME
                 AND A.TABLE_NAME = B.TABLE_NAME
-            WHERE 
-                A.INDEX_OWNER = '{schema}'           
-                AND A.TABLE_NAME IN ('{table_condition}')
-            ORDER BY 
-                A.TABLE_NAME, 
-                A.INDEX_NAME, 
+            WHERE
+                A.INDEX_OWNER = :schema
+                AND A.TABLE_NAME IN {in_clause}
+            ORDER BY
+                A.TABLE_NAME,
+                A.INDEX_NAME,
                 A.COLUMN_POSITION
         """
+        params["schema"] = schema
+        return sql, params
 
     @staticmethod
     def get_current_connections():
@@ -112,11 +113,10 @@ class DamengQueries:
     def get_max_connections():
         return "SELECT PARA_VALUE AS MAX_SESSIONS FROM V$DM_INI WHERE PARA_NAME = 'MAX_SESSIONS';"
 
-
     @staticmethod
     def get_locking_session():
         return """
-        SELECT 
+        SELECT
             blocker.SESS_ID AS BLOCKER_SESS_ID,
             blocker.CLNT_IP AS BLOCKER_IP,
             blocker.USER_NAME AS BLOCKER_USER,
@@ -128,12 +128,12 @@ class DamengQueries:
             waiter.SQL_TEXT AS WAITER_SQL,
             DBMS_LOB.SUBSTR(SF_GET_SESSION_SQL(waiter.SESS_ID)) AS WAITER_FULL_SQL,
             tab.NAME AS LOCKED_TABLE,
-            lock.LTYPE AS LOCK_TYPE,        
-            lock.LMODE AS LOCK_MODE,        
-            lock.BLOCKED AS IS_BLOCKED      
+            lock.LTYPE AS LOCK_TYPE,
+            lock.LMODE AS LOCK_MODE,
+            lock.BLOCKED AS IS_BLOCKED
         FROM V$TRXWAIT tw
-        JOIN V$SESSIONS waiter ON tw.ID = waiter.TRX_ID           
-        JOIN V$SESSIONS blocker ON tw.WAIT_FOR_ID = blocker.TRX_ID 
+        JOIN V$SESSIONS waiter ON tw.ID = waiter.TRX_ID
+        JOIN V$SESSIONS blocker ON tw.WAIT_FOR_ID = blocker.TRX_ID
         JOIN V$LOCK lock ON waiter.TRX_ID = lock.TRX_ID AND lock.BLOCKED = 1
         JOIN SYSOBJECTS tab ON lock.TABLE_ID = tab.ID
         WHERE lock.BLOCKED = 1;
@@ -142,7 +142,7 @@ class DamengQueries:
     @staticmethod
     def get_lock_info():
         return """
-        SELECT 
+        SELECT
             s.CLNT_IP,
             s.USER_NAME,
             s.SQL_TEXT,
@@ -159,18 +159,18 @@ class DamengQueries:
     @staticmethod
     def get_buffer_pool():
         return """
-        SELECT 
+        SELECT
             NAME AS BUFFER_POOL_NAME,
             SUM(PAGE_SIZE) / 1024 AS BUFFER_POOL_SIZE_MB,
             SUM(RAT_HIT) / COUNT(*) AS HIT_RATIO
-        FROM V$BUFFERPOOL 
+        FROM V$BUFFERPOOL
         GROUP BY NAME;
         """
 
     @staticmethod
     def get_tmp_table():
         return """
-        SELECT 
+        SELECT
             DF.ID AS FILE_ID,
             DF.PATH AS FILE_PATH,
             DF.TOTAL_SIZE AS TOTAL_PAGES,
@@ -200,7 +200,7 @@ class DamengQueries:
     @staticmethod
     def get_sga_status():
         return """
-        SELECT 
+        SELECT
             NAME AS MEMORY_POOL,
             SUM(TOTAL_SIZE) / 1024 / 1024 AS TOTAL_SIZE_MB,
             SUM(DATA_SIZE) / 1024 / 1024 AS USED_SIZE_MB,
@@ -212,7 +212,7 @@ class DamengQueries:
     @staticmethod
     def get_pga_status():
         return """
-        SELECT 
+        SELECT
             NAME AS PGA_STAT_NAME,
             STAT_VAL AS PGA_VALUE
         FROM V$SYSSTAT
@@ -222,7 +222,7 @@ class DamengQueries:
     @staticmethod
     def get_sga_total():
         return """
-        SELECT 
+        SELECT
             NAME AS PARAMETER_NAME,
             VALUE AS PARAMETER_VALUE
         FROM V$PARAMETER
@@ -232,7 +232,7 @@ class DamengQueries:
     @staticmethod
     def get_table_space():
         return """
-        SELECT 
+        SELECT
             TS.NAME AS TABLESPACE_NAME,
             DF.TOTAL_SIZE * DF.PAGE_SIZE / 1024 / 1024 AS TOTAL_SIZE_MB,
             (DF.TOTAL_SIZE - DF.FREE_SIZE) * DF.PAGE_SIZE / 1024 / 1024 AS USED_SIZE_MB,
@@ -243,22 +243,24 @@ class DamengQueries:
         """
 
     @staticmethod
-    def get_table_size(schema: str, table_names: List[str]) -> str:
-        table_condition = "','".join(table_names)
-
-        return f"""
-        SELECT 
+    def get_table_size(schema: str, table_names: List[str]) -> Tuple[str, Dict[str, Any]]:
+        """获取表大小（参数绑定防注入）"""
+        in_clause, params = build_in_params("table_name", table_names)
+        sql = f"""
+        SELECT
             OWNER,
             SEGMENT_NAME AS "Table",
             ROUND(SUM(BYTES) / 1024 / 1024, 2) AS "Size (MB)"
-        FROM 
+        FROM
             DBA_SEGMENTS
-        WHERE 
+        WHERE
             SEGMENT_TYPE = 'TABLE'
-            AND SEGMENT_NAME IN ('{table_condition}')
-            AND OWNER = '{schema}'
-        GROUP BY 
+            AND SEGMENT_NAME IN {in_clause}
+            AND OWNER = :schema
+        GROUP BY
             OWNER, SEGMENT_NAME
-        ORDER BY 
+        ORDER BY
             SUM(BYTES) DESC
         """
+        params["schema"] = schema
+        return sql, params

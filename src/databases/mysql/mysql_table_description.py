@@ -14,8 +14,8 @@ class MySQLTableDescription(TableDescription):
 
         # 将输入的表名按逗号分割成列表
         table_names = [name.strip() for name in table_name.split(',')]
-        sql = MySQLQueries.get_table_description(database, table_names)
+        sql, params = MySQLQueries.get_table_description(database, table_names)
 
-        sql_result = ExecuteSqlUtil.execute_single_statement(pool_name, sql)
+        sql_result = ExecuteSqlUtil.execute_single_statement(pool_name, sql, params)
 
         return ExecuteSqlUtil.format_result(sql_result)

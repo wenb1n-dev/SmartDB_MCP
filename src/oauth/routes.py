@@ -10,6 +10,7 @@ from pathlib import Path
 
 from oauth.oauth_config import OAuthConfig
 from oauth.token_handler import TokenHandler
+from config.settings import get_settings
 
 
 async def login_page(request: Request) -> HTMLResponse:
@@ -75,14 +76,16 @@ async def login(request: Request) -> JSONResponse:
         # 验证客户端凭据
         client_id = data.get("client_id")
         client_secret = data.get("client_secret")
-        
+
+        settings = get_settings()
+
         if not client_id or not client_secret:
             return JSONResponse(
                 {"error": "invalid_client", "error_description": "Invalid client credentials/客户端id，secret校验失败"},
                 status_code=401
             )
-            
-        if client_id != os.getenv("CLIENT_ID") or client_secret != os.getenv("CLIENT_SECRET"):
+
+        if client_id != settings.client_id or client_secret != settings.client_secret:
             return JSONResponse(
                 {"error": "invalid_client", "error_description": "Invalid client credentials/客户端id，secret校验失败"},
                 status_code=401
@@ -128,13 +131,13 @@ async def login(request: Request) -> JSONResponse:
             # 验证密码
             # 1. 使用与前端相同的加密方式验证
             # 第一次哈希：密码 + 盐
-            first_hash = hashlib.sha256((os.getenv("OAUTH_USER_PASSWORD", "admin") + salt).encode()).hexdigest()
+            first_hash = hashlib.sha256((settings.oauth_user_password + salt).encode()).hexdigest()
             # 第二次哈希：第一次哈希结果 + 时间戳
             expected_hash = hashlib.sha256((first_hash + timestamp).encode()).hexdigest()
 
 
             # 这里应该添加实际的用户验证逻辑
-            if username == os.getenv("OAUTH_USER_NAME", "admin") and encrypted_password == expected_hash :
+            if username == settings.oauth_user_name and encrypted_password == expected_hash :
                 # 生成令牌
                 access_token, refresh_token, access_expires, refresh_expires = TokenHandler.create_tokens(
                     user_id="1",  # 这里应该是实际的用户ID

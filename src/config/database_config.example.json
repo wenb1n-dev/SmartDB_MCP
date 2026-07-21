@@ -1,0 +1,78 @@
+{
+  "default": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "your_password",
+    "database": "your_database",
+    "role": "readonly",
+    "pool_size": 10,
+    "max_overflow": 20,
+    "pool_recycle": 3600,
+    "pool_timeout": 30,
+    "type": "mysql"
+  },
+  "postgresql": {
+    "host": "127.0.0.1",
+    "port": 5432,
+    "user": "postgres",
+    "password": "your_password",
+    "database": "your_database",
+    "schema": "public",
+    "role": "readonly",
+    "pool_size": 5,
+    "max_overflow": 10,
+    "pool_recycle": 3600,
+    "pool_timeout": 30,
+    "type": "postgresql"
+  },
+  "oracle": {
+    "host": "127.0.0.1",
+    "port": 1521,
+    "user": "your_user",
+    "password": "your_password",
+    "database": "your_database",
+    "service_name": "ORCL",
+    "role": "readonly",
+    "pool_size": 5,
+    "max_overflow": 10,
+    "pool_recycle": 3600,
+    "pool_timeout": 30,
+    "type": "oracle"
+  },
+  "mssql": {
+    "host": "127.0.0.1",
+    "port": 1433,
+    "user": "your_user",
+    "password": "your_password",
+    "database": "your_database",
+    "schema": "dbo",
+    "role": "readonly",
+    "pool_size": 5,
+    "max_overflow": 10,
+    "pool_recycle": 3600,
+    "pool_timeout": 30,
+    "type": "mssqlserver"
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6379,
+    "password": "your_redis_password",
+    "db": 0,
+    "role": "readonly",
+    "pool_size": 50,
+    "type": "redis"
+  },
+  "mongodb": {
+    "host": "127.0.0.1",
+    "port": 27017,
+    "user": "your_user",
+    "password": "your_password",
+    "database": "your_database",
+    "auth_source": "admin",
+    "role": "readonly",
+    "pool_size": 50,
+    "min_pool_size": 5,
+    "type": "mongodb"
+  }
+}

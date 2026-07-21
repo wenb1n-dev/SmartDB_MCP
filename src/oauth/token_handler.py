@@ -1,26 +1,33 @@
-import os
 from datetime import datetime, timedelta
 import jwt
 from typing import Dict, Optional, Tuple
 from oauth.oauth_config import OAuthConfig
+from config.settings import get_settings
+
+
+def _settings():
+    """Access the Settings singleton lazily (deferred to first call)."""
+    return get_settings()
+
 
 class TokenHandler:
     @staticmethod
     def create_tokens(user_id: str, username: str) -> Tuple[str, str, datetime, datetime]:
         """
         创建访问令牌和刷新令牌
-        
+
         Args:
             user_id: 用户ID
             username: 用户名
-            
+
         Returns:
             Tuple[str, str, datetime, datetime]: (访问令牌, 刷新令牌, 访问令牌过期时间, 刷新令牌过期时间)
         """
+        settings = _settings()
         # 计算过期时间
-        access_token_expires = datetime.utcnow() + timedelta(minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES",30)))
-        refresh_token_expires = datetime.utcnow() + timedelta(days=int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS",30)))
-        
+        access_token_expires = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
+        refresh_token_expires = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
+
         # 访问令牌数据
         access_token_data = {
             "sub": str(user_id),  # subject (用户ID)
@@ -29,7 +36,7 @@ class TokenHandler:
             "exp": access_token_expires,
             "iat": datetime.utcnow()
         }
-        
+
         # 刷新令牌数据
         refresh_token_data = {
             "sub": str(user_id),
@@ -38,43 +45,43 @@ class TokenHandler:
             "exp": refresh_token_expires,
             "iat": datetime.utcnow()
         }
-        
+
         # 生成令牌
         access_token = jwt.encode(
             access_token_data,
-            os.getenv("TOKEN_SECRET_KEY"),
+            settings.token_secret_key,
             algorithm=OAuthConfig.TOKEN_ALGORITHM
         )
-        
+
         refresh_token = jwt.encode(
             refresh_token_data,
-            os.getenv("TOKEN_SECRET_KEY"),
+            settings.token_secret_key,
             algorithm=OAuthConfig.TOKEN_ALGORITHM
         )
-        
+
         return access_token, refresh_token, access_token_expires, refresh_token_expires
-    
+
     @staticmethod
     def verify_token(token: str) -> Optional[Dict]:
         """
         验证令牌
-        
+
         Args:
             token: JWT令牌
-            
+
         Returns:
             Optional[Dict]: 令牌payload，无效则返回None
         """
         try:
             payload = jwt.decode(
                 token,
-                os.getenv("TOKEN_SECRET_KEY"),
+                _settings().token_secret_key,
                 algorithms=[OAuthConfig.TOKEN_ALGORITHM]
             )
             return payload
         except jwt.InvalidTokenError:
             return None
-    
+
     @staticmethod
     def create_token_response(
         access_token: str,
@@ -84,26 +91,27 @@ class TokenHandler:
     ) -> Dict:
         """
         创建标准的OAuth2.0令牌响应
-        
+
         Args:
             access_token: 访问令牌
             refresh_token: 刷新令牌
             access_token_expires: 访问令牌过期时间
             refresh_token_expires: 刷新令牌过期时间
-            
+
         Returns:
             Dict: OAuth2.0标准令牌响应
         """
+        settings = _settings()
         # 转换为北京时间 (UTC+8)
         access_token_expires_beijing = access_token_expires + timedelta(hours=8)
         refresh_token_expires_beijing = refresh_token_expires + timedelta(hours=8)
-        
+
         return {
             "access_token": access_token,
             "token_type": "bearer",
-            "expires_in": int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES",30)) * 60,  # 秒
+            "expires_in": settings.access_token_expire_minutes * 60,  # 秒
             "refresh_token": refresh_token,
-            "refresh_token_expires_in": int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS",30)) * 24 * 60 * 60,  # 秒
+            "refresh_token_expires_in": settings.refresh_token_expire_days * 24 * 60 * 60,  # 秒
             "expire_time": access_token_expires_beijing.strftime("%Y-%m-%d %H:%M:%S (BeiJing)"),
             "refresh_token_expire_time": refresh_token_expires_beijing.strftime("%Y-%m-%d %H:%M:%S (BeiJing)")
-        } 
+        }

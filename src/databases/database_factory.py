@@ -1,7 +1,8 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import ClassVar, Dict, Type
 
 from config.dbconfig import get_db_config_by_name
+from datasource.base import DataSourceFactory, Paradigm
 from databases.base.base import (
     TableDescription,
     DatabaseVersion,
@@ -17,7 +18,7 @@ _pending_factories = []
 
 def register_all_factories():
     """注册所有待注册的工厂类
-    
+
     此函数应在所有数据库工厂类导入完成后调用，以确保所有工厂类都被正确注册
     """
     for factory_cls in _pending_factories:
@@ -28,19 +29,18 @@ def register_all_factories():
 
 class FactoryRegistry:
     # 存储工厂类而不是工厂实例
-    _factory_classes: ClassVar[Dict[str, Type['DatabaseOperationFactory']]] = {}
+    _factory_classes: ClassVar[Dict[str, Type['DataSourceFactory']]] = {}
     # 存储已创建的工厂实例
-    _instances: ClassVar[Dict[str, 'DatabaseOperationFactory']] = {}
+    _instances: ClassVar[Dict[str, 'DataSourceFactory']] = {}
 
     @classmethod
-    def register(cls, factory_class: Type['DatabaseOperationFactory']) -> Type['DatabaseOperationFactory']:
+    def register(cls, factory_class: Type['DataSourceFactory']) -> Type['DataSourceFactory']:
         # 只注册类，不立即实例化
-        factory = factory_class
-        cls._factory_classes[factory.name] = factory
+        cls._factory_classes[factory_class.name] = factory_class
         return factory_class
 
     @classmethod
-    def get_factory_by_factory_name(cls, name: str) -> 'DatabaseOperationFactory':
+    def get_factory_by_factory_name(cls, name: str) -> 'DataSourceFactory':
         # 延迟初始化：只有在需要时才创建实例
         if name not in cls._instances:
             if name not in cls._factory_classes:
@@ -49,7 +49,7 @@ class FactoryRegistry:
         return cls._instances[name]
 
     @classmethod
-    def get_factory_by_pool_name(cls, pool_name: str) -> 'DatabaseOperationFactory':
+    def get_factory_by_pool_name(cls, pool_name: str) -> 'DataSourceFactory':
         db_config = get_db_config_by_name(pool_name)
         name = db_config.get("type")
 
@@ -60,8 +60,16 @@ class FactoryRegistry:
             cls._instances[name] = cls._factory_classes[name]()
         return cls._instances[name]
 
-class DatabaseOperationFactory(ABC):
-    name: str = ""
+
+class DatabaseOperationFactory(DataSourceFactory):
+    """Relational database operation factory.
+
+    Inherits common methods (create_db_version, create_db_health) from
+    DataSourceFactory and adds relational-specific abstract methods for
+    table operations and SQL optimization.
+    """
+
+    paradigm: ClassVar[Paradigm] = Paradigm.RELATIONAL
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -73,23 +81,27 @@ class DatabaseOperationFactory(ABC):
     @abstractmethod
     def create_db_version(self) -> "DatabaseVersion":
         pass
+
     @abstractmethod
     def create_table_description(self) -> "TableDescription":
         pass
+
     @abstractmethod
     def create_table_name(self) -> "TableName":
         pass
+
     @abstractmethod
     def create_table_index(self) -> "TableIndex":
         pass
+
     @abstractmethod
     def create_db_health(self) -> "DatabaseHealth":
         pass
+
     @abstractmethod
     def create_sql_optimize(self) -> "SqlOptimize":
         pass
 
     @classmethod
-    def get_factory_by_pool_name(cls, pool_name: str) -> 'DatabaseOperationFactory':
+    def get_factory_by_pool_name(cls, pool_name: str) -> 'DataSourceFactory':
         return FactoryRegistry.get_factory_by_pool_name(pool_name)
-

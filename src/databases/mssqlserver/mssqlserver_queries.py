@@ -1,138 +1,135 @@
-from typing import List
+from typing import List, Tuple, Dict, Any
+
+from utils.sql_safety import build_in_params, validate_identifier
 
 
 class MSSQLServerQueries:
     @staticmethod
     def get_db_version() -> str:
-        """
-        获取数据库版本的SQL查询
-
-        Returns:
-            SQL查询语句
-        """
+        """获取数据库版本的SQL查询"""
         return "SELECT @@VERSION;"
 
     @staticmethod
-    def get_table_names(database: str, schema: str, text: str) -> str:
-        """
-        根据注释获取表名的SQL查询
+    def get_table_names(database: str, schema: str, text: str) -> Tuple[str, Dict[str, Any]]:
+        """根据注释获取表名的SQL查询（参数绑定防注入）
 
         Args:
-            schema: 数据库名称
+            database: 数据库名称（用于跨库前缀，需验证标识符）
+            schema: 模式名称
             text: 表注释关键词
 
         Returns:
-            SQL查询语句
+            (SQL模板, 参数字典)
         """
-        db_prefix = f"[{database}]."
+        # database 用于结构性前缀 [database].，无法参数化，需验证标识符
+        validated_db = validate_identifier(database)
+        db_prefix = f"[{validated_db}]."
+
         sql = f"""
-            SELECT 
+            SELECT
                     s.name AS TABLE_SCHEMA,
                     t.name AS TABLE_NAME,
                     CAST(ep.value AS NVARCHAR(500)) AS TABLE_COMMENT
-                FROM 
+                FROM
                     {db_prefix}sys.tables t
-                INNER JOIN 
+                INNER JOIN
                     {db_prefix}sys.schemas s ON t.schema_id = s.schema_id
-                LEFT JOIN 
-                    {db_prefix}sys.extended_properties ep ON t.object_id = ep.major_id 
-                    AND ep.minor_id = 0 
+                LEFT JOIN
+                    {db_prefix}sys.extended_properties ep ON t.object_id = ep.major_id
+                    AND ep.minor_id = 0
                     AND ep.name = 'MS_Description'
-                WHERE 
-                    s.name = '{schema}'  
+                WHERE
+                    s.name = :schema
         """
+        params: Dict[str, Any] = {"schema": schema}
 
         if "SEARCH_ALL_TABLES" != text:
             sql += (
-                f"and ( AND CAST(ep.value AS NVARCHAR(500))  LIKE '%{text}%' "
-                f"OR t.name LIKE '%{text}%' )"
+                " AND (CAST(ep.value AS NVARCHAR(500)) LIKE :keyword"
+                " OR t.name LIKE :keyword)"
             )
+            params["keyword"] = f"%{text}%"
 
-        return sql
+        return sql, params
 
     @staticmethod
-    def get_table_description(database:str, schema: str, table_names: List[str]) -> str:
+    def get_table_description(database: str, schema: str, table_names: List[str]) -> Tuple[str, Dict[str, Any]]:
+        """获取表结构描述的SQL查询（参数绑定防注入）"""
+        validated_db = validate_identifier(database)
+        db_prefix = f"[{validated_db}]."
 
-        db_prefix = f"[{database}]."
-
-        """
-        获取表结构描述的SQL查询
-
-        Args:
-            database: 数据库名称
-            table_names: 表名列表
-
-        Returns:
-            SQL查询语句
-        """
-        table_condition = "','".join(table_names)
-        return f"""
-                SELECT 
+        in_clause, params = build_in_params("table_name", table_names)
+        sql = f"""
+                SELECT
                 c.TABLE_NAME,
                 c.COLUMN_NAME,
                 c.DATA_TYPE,
                 ISNULL(ep.value, '') AS COLUMN_COMMENT
             FROM {db_prefix}INFORMATION_SCHEMA.COLUMNS c
-            LEFT JOIN {db_prefix}SYS.EXTENDED_PROPERTIES ep 
+            LEFT JOIN {db_prefix}SYS.EXTENDED_PROPERTIES ep
                 ON ep.major_id = OBJECT_ID(c.TABLE_SCHEMA + '.' + c.TABLE_NAME)
                 AND ep.minor_id = c.ORDINAL_POSITION
                 AND ep.name = 'MS_Description'
-            WHERE 
-                c.TABLE_SCHEMA = '{schema}'
-                AND c.TABLE_NAME IN ('{table_condition}')
+            WHERE
+                c.TABLE_SCHEMA = :schema
+                AND c.TABLE_NAME IN {in_clause}
             ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION;
-                       """
+        """
+        params["schema"] = schema
+        return sql, params
 
     @staticmethod
-    def get_table_index(database:str, schema: str, table_names: List[str]) -> str:
-        db_prefix = f"[{database}]."
+    def get_table_index(database: str, schema: str, table_names: List[str]) -> Tuple[str, Dict[str, Any]]:
+        """获取表索引的SQL查询（参数绑定防注入）"""
+        validated_db = validate_identifier(database)
+        db_prefix = f"[{validated_db}]."
 
-        table_condition = "','".join(table_names)
-
-        return f"""
-            SELECT 
+        in_clause, params = build_in_params("table_name", table_names)
+        sql = f"""
+            SELECT
                 t.name AS TABLE_NAME,
                 i.name AS INDEX_NAME,
                 c.name AS COLUMN_NAME,
                 ic.key_ordinal AS SEQ_IN_INDEX,
                 CASE WHEN i.is_unique = 0 THEN 1 ELSE 0 END AS NON_UNIQUE,
                 i.type_desc AS INDEX_TYPE
-            FROM 
+            FROM
                 {db_prefix}sys.indexes i
-            INNER JOIN 
+            INNER JOIN
                 {db_prefix}sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-            INNER JOIN 
+            INNER JOIN
                 {db_prefix}sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-            INNER JOIN 
+            INNER JOIN
                 {db_prefix}sys.tables t ON i.object_id = t.object_id
-            INNER JOIN 
+            INNER JOIN
                 {db_prefix}sys.schemas s ON t.schema_id = s.schema_id
-            WHERE 
-                s.name = '{schema}'  
-                AND t.name IN ('{table_condition}') 
-                AND i.type_desc != 'HEAP' 
-            ORDER BY 
+            WHERE
+                s.name = :schema
+                AND t.name IN {in_clause}
+                AND i.type_desc != 'HEAP'
+            ORDER BY
                 t.name, i.name, ic.key_ordinal;
-            """
+        """
+        params["schema"] = schema
+        return sql, params
 
     @staticmethod
     def get_max_connections() -> str:
         return """
-            SELECT 
-                name, 
-                value, 
-                value_in_use 
-            FROM 
-                sys.configurations 
-            WHERE 
+            SELECT
+                name,
+                value,
+                value_in_use
+            FROM
+                sys.configurations
+            WHERE
                 name = 'user connections';
-
         """
 
     @staticmethod
-    def get_current_connections () -> str:
+    def get_current_connections() -> str:
        return """
-            SELECT 
+            SELECT
                 s.session_id,
                 s.login_name,
                 s.host_name,
@@ -199,7 +196,7 @@ class MSSQLServerQueries:
     @staticmethod
     def get_lock_session():
         return """
-        SELECT 
+        SELECT
             r.session_id AS blocking_session_id,
             s.login_name,
             s.host_name,
@@ -222,8 +219,8 @@ class MSSQLServerQueries:
         INNER JOIN sys.dm_os_tasks t ON s.session_id = t.session_id
         OUTER APPLY sys.dm_exec_sql_text(r.sql_handle) st
         WHERE r.session_id IN (
-            SELECT blocking_session_id 
-            FROM sys.dm_exec_requests 
+            SELECT blocking_session_id
+            FROM sys.dm_exec_requests
             WHERE blocking_session_id <> 0
         )
         AND s.is_user_process = 1;
@@ -232,7 +229,7 @@ class MSSQLServerQueries:
     @staticmethod
     def get_buffer_pool():
         return """
-        SELECT 
+        SELECT
             (CAST(SUM(CASE WHEN counter_name = 'Buffer cache hit ratio' THEN cntr_value ELSE 0 END) AS FLOAT) /
             CAST(SUM(CASE WHEN counter_name = 'Buffer cache hit ratio base' THEN cntr_value ELSE 0 END) AS FLOAT)) * 100 AS buffer_cache_hit_ratio
         FROM sys.dm_os_performance_counters
@@ -243,47 +240,47 @@ class MSSQLServerQueries:
     @staticmethod
     def get_buffer_ple():
         return """
-        SELECT 
+        SELECT
             instance_name AS database_name,
             counter_name,
-            cntr_value 
-        FROM 
-            sys.dm_os_performance_counters 
-        WHERE 
+            cntr_value
+        FROM
+            sys.dm_os_performance_counters
+        WHERE
             object_name LIKE '%Buffer Manager%'
-            AND counter_name in ('Free pages','Page life expectancy'); 
+            AND counter_name in ('Free pages','Page life expectancy');
         """
 
     @staticmethod
     def get_tmp_table():
         return """
-        SELECT 
+        SELECT
             SUM(user_object_reserved_page_count) * 8 / 1024 AS user_objects_mb,
             SUM(internal_object_reserved_page_count) * 8 / 1024 AS internal_objects_mb
-        FROM 
+        FROM
             sys.dm_db_file_space_usage;
         """
 
     @staticmethod
     def get_io_info():
         return """
-        SELECT 
+        SELECT
             file_id,
             io_stall_read_ms,
             num_of_reads,
             io_stall_write_ms,
             num_of_writes
-        FROM 
+        FROM
             sys.dm_io_virtual_file_stats(DB_ID(), NULL);
         """
 
     @staticmethod
     def get_memory_info():
         return """
-        SELECT 
+        SELECT
             counter_name,
             cntr_value,
-            CASE 
+            CASE
                 WHEN counter_name = 'Page life expectancy' THEN 'seconds'
                 WHEN counter_name LIKE '%Memory%' THEN 'KB'
                 WHEN counter_name LIKE '%Node Memory%' THEN 'KB'
@@ -294,7 +291,7 @@ class MSSQLServerQueries:
           AND instance_name = ''
           AND counter_name IN ('Total Server Memory (KB)', 'Target Server Memory (KB)', 'Database Cache Memory (KB)', 'Free Memory (KB)', 'Stolen Memory (KB)')
         UNION ALL
-        SELECT 
+        SELECT
             'Page life expectancy' AS counter_name,
             cntr_value,
             'seconds' AS unit

@@ -2,18 +2,21 @@ from typing import Dict, Sequence, Any
 
 from mcp.types import TextContent, Tool
 
+from datasource.base import Paradigm
 from databases.database_factory import DatabaseOperationFactory
 from tools.base import ToolsBase
 
 class GetTableIndex(ToolsBase):
     """数据库表索引查询工具类
-    
+
     该类用于查询指定数据库表的索引信息。
     继承自ToolsBase基类，实现了获取工具描述和执行工具的核心方法。
     """
-    
+
     # 工具名称
     name = "get_table_index"
+    # 仅适用于关系型数据库
+    applicable_paradigms = [Paradigm.RELATIONAL]
     # 工具描述，包含中英文说明
     description = (
         "根据表名搜索数据库中对应的表索引,支持多表查询(Search for table indexes in the database based on table names, supporting multi-table queries)"

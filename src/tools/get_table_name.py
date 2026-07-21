@@ -2,18 +2,21 @@ from typing import Dict, Sequence, Any
 
 from mcp.types import TextContent, Tool
 
+from datasource.base import Paradigm
 from databases.database_factory import DatabaseOperationFactory
 from tools.base import ToolsBase
 
 class GetTableName(ToolsBase):
     """数据库表名查询工具类
-    
+
     该类用于查询数据库中的所有表名或根据表的中文名称/描述搜索对应的表名。
     继承自ToolsBase基类，实现了获取工具描述和执行工具的核心方法。
     """
-    
+
     # 工具名称
     name = "get_table_name"
+    # 仅适用于关系型数据库
+    applicable_paradigms = [Paradigm.RELATIONAL]
     # 工具描述，包含中英文说明和使用场景说明
     description = (
         "数据库表名查询工具。用于查询数据库中的所有表名或将根据表的中文名称或表描述搜索数据库中对应的表名。"

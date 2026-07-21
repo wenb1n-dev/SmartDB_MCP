@@ -13,8 +13,8 @@ class DamengTableName(TableName):
             schema = db_config.get("schema")
 
 
-        sql = DamengQueries.get_table_names(schema, text)
+        sql, params = DamengQueries.get_table_names(schema, text)
 
-        sql_result = ExecuteSqlUtil.execute_single_statement(pool_name, sql)
+        sql_result = ExecuteSqlUtil.execute_single_statement(pool_name, sql, params)
 
         return ExecuteSqlUtil.format_result(sql_result)

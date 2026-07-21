@@ -48,8 +48,8 @@ class PostgresqlHealth(DatabaseHealth):
         max_connection_sql = PostgresqlQueries.get_max_connections()
         max_connection_result = ExecuteSqlUtil.execute_single_statement(pool_name, max_connection_sql)
 
-        current_connection_sql = PostgresqlQueries.get_current_connections(db_config["database"])
-        current_connection_result = ExecuteSqlUtil.execute_single_statement(pool_name, current_connection_sql)
+        current_connection_sql, current_connection_params = PostgresqlQueries.get_current_connections(db_config["database"])
+        current_connection_result = ExecuteSqlUtil.execute_single_statement(pool_name, current_connection_sql, current_connection_params)
 
         # 构建结果字符串
         result_parts = []

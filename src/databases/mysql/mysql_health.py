@@ -51,16 +51,16 @@ class MySQLHealth(DatabaseHealth):
             索引健康分析结果
         """
         # 获取冗余索引情况
-        redundant_sql = MySQLQueries.get_db_health_index_redundant(db_config["database"])
-        redundant_result = ExecuteSqlUtil.execute_single_statement(pool_name, redundant_sql)
+        redundant_sql, redundant_params = MySQLQueries.get_db_health_index_redundant(db_config["database"])
+        redundant_result = ExecuteSqlUtil.execute_single_statement(pool_name, redundant_sql, redundant_params)
 
         # 获取性能较差的索引情况
-        slow_sql = MySQLQueries.get_db_health_index_slow(db_config["database"])
-        slow_result = ExecuteSqlUtil.execute_single_statement(pool_name, slow_sql)
+        slow_sql, slow_params = MySQLQueries.get_db_health_index_slow(db_config["database"])
+        slow_result = ExecuteSqlUtil.execute_single_statement(pool_name, slow_sql, slow_params)
 
         # 获取未使用索引查询时间大于30秒的top5情况
-        unused_sql = MySQLQueries.get_slow_unused_index_top5(db_config["database"])
-        unused_result = ExecuteSqlUtil.execute_single_statement(pool_name, unused_sql)
+        unused_sql, unused_params = MySQLQueries.get_slow_unused_index_top5(db_config["database"])
+        unused_result = ExecuteSqlUtil.execute_single_statement(pool_name, unused_sql, unused_params)
 
         # 格式化结果
         formatted_results = []

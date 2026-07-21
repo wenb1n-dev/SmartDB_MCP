@@ -1,6 +1,6 @@
 {
   "default": {
-    "host": "192.168.x.xxx",
+    "host": "192.168.2.229",
     "port": 3306,
     "user": "root",
     "password": "root",

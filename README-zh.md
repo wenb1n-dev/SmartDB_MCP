@@ -13,31 +13,61 @@ SmartDB是一个通用数据库网关，实现了模型上下文协议（Model C
 
 
 # 目前支持的数据库
-| 数据库 | 支持 | 描述                          |
-|-----|----|-----------------------------|
-| MySQL | √  | Mysql 5.6+、Mariadb 10+ 均支持  |
-| PostgreSQL | √  | PostgreSQL 9.6+、YMatrix 均支持 |
-| Oracle | √  | Oracle 12 +                 |
-| SQL Server | √  | Microsoft SQL Server 2012 + |
-| 达梦数据库 | √  | DM8                         |
+| 数据库 | 类型 | 支持 | 描述                          |
+|-----|------|----|-----------------------------|
+| MySQL | 关系型 | √  | Mysql 5.6+、Mariadb 10+ 均支持  |
+| PostgreSQL | 关系型 | √  | PostgreSQL 9.6+、YMatrix 均支持 |
+| Oracle | 关系型 | √  | Oracle 12 +                 |
+| SQL Server | 关系型 | √  | Microsoft SQL Server 2012 + |
+| 达梦数据库 | 关系型 | √  | DM8                         |
+| Redis | KV 存储 | √  | Redis 5.0+                  |
+| MongoDB | 文档型 | √  | MongoDB 4.0+                |
 
 # 工具列表
+
+## 关系型数据库工具
 | 工具名称            | 描述                                                                                                                                 |
-|-----------------|------------------------------------------------------------------------------------------------------------------------------------| 
+|-----------------|------------------------------------------------------------------------------------------------------------------------------------|
 | execute_sql     | sql执行工具，根据权限配置可执行["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", "TRUNCATE"] 命令 |
 | get_db_health   | 分析数据库的健康状态（连接情况、事务情况、运行情况、锁情况检测），输出专业的诊断报告及解决方案                                                                                    |
 | get_table_desc  | 根据表名搜索数据库中对应的表结构,支持多表查询                                                                                                            |
 | get_table_index | 根据表名搜索数据库中对应的表索引,支持多表查询                                                                                                            |
 | get_table_name  | 数据库表名查询工具。用于查询数据库中的所有表名或将根据表的中文名称或表描述搜索数据库中对应的表名                                                                                   |
 | get_db_version  | 数据库版本查询工具                                                                                                                          |
-| sql_creator     | SQL查询生成工具，根据不同的数据库类型生成对应SQL查询语句                                                                                                    
-| sql_optimize    | 专业的SQL性能优化工具，基于执行计划、表结构信息、表数据量、表索引提供专家级优化建议                                                                                        | 
+| sql_creator     | SQL查询生成工具，根据不同的数据库类型生成对应SQL查询语句
+| sql_optimize    | 专业的SQL性能优化工具，基于执行计划、表结构信息、表数据量、表索引提供专家级优化建议                                                                                        |
+
+## KV 存储工具（Redis）
+| 工具名称            | 描述                                                                 |
+|-----------------|--------------------------------------------------------------------|
+| execute_command | 执行 Redis 命令（GET/SET/HGET/LPUSH 等），带权限校验                    |
+| get_key_info    | 查询 Redis Key 的详细信息（类型、大小、TTL、内存使用）                   |
+| scan_keys       | 按 pattern 扫描 Redis Key（使用 SCAN 命令，非阻塞）                    |
+| get_db_health   | 分析 Redis 健康状态（连接、内存、慢查询、复制、持久化），输出诊断报告        |
+| get_db_version  | 查询 Redis 版本号                                                    |
+
+## 文档存储工具（MongoDB）
+| 工具名称            | 描述                                                                 |
+|-----------------|--------------------------------------------------------------------|
+| execute_mongo_query | 执行 MongoDB 查询（find/aggregate），支持过滤、投影、排序、分页        |
+| get_collection_schema | 通过采样文档推断集合 Schema（字段名、类型、出现频率）                   |
+| get_collection_names | 查询数据库中的集合列表，支持按名称模式过滤                              |
+| get_collection_indexes | 查询集合索引信息，支持查询单个或所有集合                               |
+| mongo_explain | 分析 MongoDB 查询执行计划，包括查询计划、执行统计、索引使用情况          |
+| get_db_health | 分析 MongoDB 健康状态（连接、内存、慢查询、复制、索引），输出诊断报告    |
+| get_db_version | 查询 MongoDB 版本号                                                  |
 
 # 使用方法
 ## env 配置文件说明
 ```aiignore
 # 数据库配置文件路径
 DATABASE_CONFIG_FILE=/Volumes/SmartDB/src/config/database_config.json
+
+#========Server========
+# 服务器监听地址
+SERVER_HOST=0.0.0.0
+# 服务器监听端口
+SERVER_PORT=3000
 
 #========OAuth2========
 # OAuth2 客户端 ID
@@ -116,6 +146,27 @@ OAUTH_USER_PASSWORD=wenb1n
     "pool_recycle": 3600,
     "pool_timeout": 30,
     "type": "mssqlserver"
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6379,
+    "password": "your_redis_password",
+    "db": 0,
+    "role": "readonly",
+    "pool_size": 50,
+    "type": "redis"
+  },
+  "mongodb": {
+    "host": "127.0.0.1",
+    "port": 27017,
+    "user": "your_user",
+    "password": "your_password",
+    "database": "your_database",
+    "auth_source": "admin",
+    "role": "readonly",
+    "pool_size": 50,
+    "min_pool_size": 5,
+    "type": "mongodb"
   }
 }
 
@@ -128,15 +179,15 @@ OAUTH_USER_PASSWORD=wenb1n
 |--------|------|------|------|
 | host | 是 | string | 数据库服务器地址 |
 | port | 是 | integer | 数据库服务器端口号 |
-| user | 是 | string | 数据库用户名 |
-| password | 是 | string | 数据库用户密码 |
-| database | 是 | string | 要连接的数据库名称 |
+| user | 关系型、MongoDB 必需 | string | 数据库用户名 |
+| password | 关系型、MongoDB 必需 | string | 数据库用户密码 |
+| database | 关系型、MongoDB 必需 | string | 要连接的数据库名称 |
 | role | 是 | string | 用户角色，如 "readonly" 表示只读权限 |
 | pool_size | 是 | integer | 连接池大小 |
-| max_overflow | 是 | integer | 连接池最大溢出连接数 |
-| pool_recycle | 是 | integer | 连接池回收时间（秒） |
-| pool_timeout | 是 | integer | 连接池超时时间（秒） |
-| type | 是 | string | 数据库类型，如 "mysql"、"postgresql"、"oracle"、"mssqlserver" |
+| max_overflow | 关系型 | integer | 连接池最大溢出连接数 |
+| pool_recycle | 关系型 | integer | 连接池回收时间（秒） |
+| pool_timeout | 关系型 | integer | 连接池超时时间（秒） |
+| type | 是 | string | 数据库类型，如 "mysql"、"postgresql"、"oracle"、"mssqlserver"、"dameng"、"redis"、"mongodb" |
 
 * 特定数据库额外参数
 
@@ -144,6 +195,9 @@ OAUTH_USER_PASSWORD=wenb1n
 |--------|------------|------|------|------|
 | schema | PostgreSQL, SQL Server | 否 | string | 数据库模式 |
 | service_name | Oracle | 否 | string | Oracle服务名 |
+| db | Redis | 否 | integer | Redis 数据库索引，默认 0 |
+| auth_source | MongoDB | 否 | string | 认证数据库，默认 "admin" |
+| min_pool_size | MongoDB | 否 | integer | 最小连接池大小，默认 5 |
 
 * role 权限控制配置项以及对应数据库权限：只读（readonly）、读写（writer）、管理员（admin）
 ```

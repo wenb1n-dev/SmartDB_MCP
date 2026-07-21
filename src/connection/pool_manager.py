@@ -8,9 +8,7 @@ from typing import Dict, Any, Optional, List
 from contextlib import contextmanager
 import threading
 
-from .connection_pool import (
-    SQLAlchemyConnectionPool
-)
+from connection.base import ConnectionPool
 from config.dbconfig import get_db_configs
 from .pool_creator import DatabasePoolFactory
 
@@ -35,13 +33,19 @@ class MultiDBPoolManager:
 
     @classmethod
     def init_from_config(cls):
-        """类方法：初始化单例并从配置加载所有连接池（只应在服务启动时调用一次）"""
+        """类方法：初始化单例并从配置加载所有连接池（只应在服务启动时调用一次）
+
+        使用锁保证多线程下只初始化一次。
+        """
         instance = cls.get_instance()
-        instance._init_from_config()
+        with cls._lock:
+            if not getattr(instance, '_config_loaded', False):
+                instance._init_from_config()
+                instance._config_loaded = True
         return instance
 
     @classmethod
-    def get_pool(cls, pool_name: str) -> Optional[SQLAlchemyConnectionPool]:
+    def get_pool(cls, pool_name: str) -> Optional[ConnectionPool]:
         """类方法：获取指定名称的连接池"""
         instance = cls.get_instance()
         return instance._pools.get(pool_name)
@@ -51,14 +55,22 @@ class MultiDBPoolManager:
         instance = cls.get_instance()
         return instance._pools.keys()
 
+    @classmethod
+    def close_all(cls):
+        """类方法：关闭所有连接池（优雅关闭入口）"""
+        instance = cls.get_instance()
+        instance.close_all_pools()
+
     def __init__(self, auto_init_from_config: bool = True):
         if hasattr(self, '_initialized') and self._initialized:
             return
-        self._pools: Dict[str, SQLAlchemyConnectionPool] = {}
+        self._pools: Dict[str, ConnectionPool] = {}
+        self._config_loaded = False
         logger.info("MultiDBPoolManager initialized")
         self._initialized = True
         if auto_init_from_config:
             self._init_from_config()
+            self._config_loaded = True
 
     def _init_from_config(self):
         """从配置文件自动初始化所有数据库连接池"""
@@ -142,9 +154,9 @@ class MultiDBPoolManager:
         """
         return [self.get_stats(name) for name in self._pools.keys()]
 
-    def close_all(self):
+    def close_all_pools(self):
         """
-        关闭所有连接池
+        关闭所有连接池（实例方法）
         """
         for name, pool in self._pools.items():
             try:
@@ -154,6 +166,7 @@ class MultiDBPoolManager:
                 logger.error(f"Error closing connections for pool '{name}': {e}")
 
         self._pools.clear()
+        self._config_loaded = False
         logger.info("All pools closed and cleared")
 
 

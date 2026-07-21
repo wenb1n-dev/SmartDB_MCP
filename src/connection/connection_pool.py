@@ -5,17 +5,19 @@ SQLAlchemy数据库连接池工具类
 
 import logging
 from contextlib import contextmanager
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Iterator
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import QueuePool, SingletonThreadPool, NullPool
 from sqlalchemy.exc import SQLAlchemyError
 
+from connection.base import ConnectionPool
+
 # 配置日志
 logger = logging.getLogger(__name__)
 
 
-class SQLAlchemyConnectionPool:
+class SQLAlchemyConnectionPool(ConnectionPool):
     """
     基于SQLAlchemy的数据库连接池实现
     """
@@ -114,10 +116,10 @@ class SQLAlchemyConnectionPool:
             logger.warning(f"Error returning connection to pool: {e}")
 
     @contextmanager
-    def connection(self):
+    def connection(self) -> Iterator[Any]:
         """
         上下文管理器方式使用连接
-        
+
         Usage:
             with pool.connection() as conn:
                 # 使用连接执行数据库操作

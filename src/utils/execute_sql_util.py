@@ -4,51 +4,19 @@ SQL执行工具类，使用数据库连接池执行SQL语句
 
 import logging
 import re
-from enum import Enum
 from typing import List, Tuple, Optional, Dict, Any, Set
 from dataclasses import dataclass
-from contextlib import contextmanager
 
-from pymysql import MySQLError
+import sqlparse
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError, OperationalError, DBAPIError
 
-from config.dbconfig import get_db_config, get_role_permissions
 from connection.pool_manager import MultiDBPoolManager
 from core.exceptions import SQLPermissionError
+from permission import SqlPermissionPolicy, SQLOperation
 
 logger = logging.getLogger(__name__)
 
-class SQLOperation(str, Enum):
-    """SQL 操作类型枚举"""
-    SELECT = 'SELECT'
-    INSERT = 'INSERT'
-    UPDATE = 'UPDATE'
-    DELETE = 'DELETE'
-    CREATE = 'CREATE'
-    ALTER = 'ALTER'
-    DROP = 'DROP'
-    TRUNCATE = 'TRUNCATE'
-    SHOW = 'SHOW'
-    DESCRIBE = 'DESCRIBE'
-    EXPLAIN = 'EXPLAIN'
-
-    @classmethod
-    def from_str(cls, value: str) -> 'SQLOperation':
-        """从字符串创建 SQLOperation 枚举值
-
-        Args:
-            value: SQL 操作字符串
-
-        Returns:
-            SQLOperation: 对应的枚举值
-
-        Raises:
-            ValueError: 当操作类型不支持时
-        """
-        try:
-            return cls(value.upper())
-        except ValueError:
-            raise ValueError(f"不支持的SQL操作类型: {value}")
 
 @dataclass
 class SQLResult:
@@ -67,49 +35,64 @@ class ExecuteSqlUtil:
     SQL_COMMENT_PATTERN = re.compile(r'--.*$|/\*.*?\*/', re.MULTILINE | re.DOTALL)
 
     @classmethod
-    def execute_single_statement(cls, pool_name: str, statement: str) -> SQLResult:
+    def execute_single_statement(
+        cls,
+        pool_name: str,
+        statement: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> SQLResult:
         """执行单条SQL语句
-        
+
         Args:
-            statement: SQL语句
             pool_name: 线程池名称
+            statement: SQL语句
+            params: SQL参数字典，用于参数绑定（防止SQL注入）
+
         Returns:
             SQL执行结果
-            
+
         Raises:
             Exception: 当执行出错时
         """
         try:
 
-            # 检查权限
+            # 检查权限（使用 pool_name 对应的配置，而非 default 配置）
             operations = ExecuteSqlUtil.extract_operations(statement)
 
-            ExecuteSqlUtil.check_permissions(operations)
+            ExecuteSqlUtil.check_permissions(operations, pool_name)
 
             pool = MultiDBPoolManager.get_pool(pool_name)
+            if pool is None:
+                return SQLResult(
+                    success=False,
+                    message=f"连接池 '{pool_name}' 不存在"
+                )
 
             with pool.connection() as conn:
 
                 # 清理SQL语句并转为大写进行分析
                 cleaned_statement = ExecuteSqlUtil.clean_sql(statement)
                 upper_statement = cleaned_statement.upper().strip()
-                
+
                 # 判断语句类型
-                is_select = (upper_statement.startswith('SELECT') or 
+                is_select = (upper_statement.startswith('SELECT') or
                            upper_statement.startswith('WITH'))
-                
+
                 is_show = upper_statement.startswith('SHOW')
                 is_explain = upper_statement.startswith('EXPLAIN') and not upper_statement.startswith('EXPLAIN PLAN FOR ')
-                is_describe = (upper_statement.startswith('DESCRIBE') or 
+                is_describe = (upper_statement.startswith('DESCRIBE') or
                              upper_statement.startswith('DESC '))
-                
+
                 # 特殊语句类型（通常返回结果集）
                 is_query_type = is_select or is_show or is_explain or is_describe
 
                 try:
-                    # 执行SQL语句
-                    result = conn.execute(text(statement))
-                    
+                    # 执行SQL语句（支持参数绑定）
+                    if params:
+                        result = conn.execute(text(statement), params)
+                    else:
+                        result = conn.execute(text(statement))
+
                     # 根据语句类型处理结果
                     if is_query_type:
                         # 查询类语句（SELECT, SHOW, EXPLAIN, DESCRIBE等）
@@ -132,14 +115,29 @@ class ExecuteSqlUtil:
                 except Exception as e:
                     # 如果是非查询语句且执行失败，回滚事务
                     if not is_query_type:
-                        conn.rollback()
+                        try:
+                            conn.rollback()
+                        except Exception:
+                            pass
                     raise
-                        
-        except MySQLError as e:
+
+        except SQLPermissionError as e:
+            logger.warning(f"权限拒绝: {e}, SQL: {statement}")
+            return SQLResult(
+                success=False,
+                message=f"权限不足: {str(e)}"
+            )
+        except (OperationalError, DBAPIError) as e:
+            logger.error(f"数据库连接/操作错误: {e}, SQL: {statement}")
+            return SQLResult(
+                success=False,
+                message=f"数据库操作失败: {str(e)}"
+            )
+        except SQLAlchemyError as e:
             logger.error(f"SQL执行错误: {e}, SQL: {statement}")
             return SQLResult(
                 success=False,
-                message=f"执行失败: {str(e)}"
+                message=f"SQL执行失败: {str(e)}"
             )
         except Exception as e:
             logger.error(f"未知错误: {e}, SQL: {statement}")
@@ -147,23 +145,27 @@ class ExecuteSqlUtil:
                 success=False,
                 message=f"执行失败: {str(e)}"
             )
+
     @classmethod
-    def execute_multiple_statements(cls,pool_name: str, query: str) -> List[SQLResult]:
+    def execute_multiple_statements(cls, pool_name: str, query: str) -> List[SQLResult]:
         """执行多条SQL语句
-        
+
+        使用 sqlparse 进行语句分割，正确处理字符串字面量内的分号。
+
         Args:
             pool_name:  线程池名称
             query: 包含多条SQL语句的查询字符串，以分号分隔
-            
+
         Returns:
             SQL执行结果列表
         """
-        statements = [stmt.strip() for stmt in query.split(';') if stmt.strip()]
+        # 使用 sqlparse 分割，正确处理字符串内的分号和注释
+        statements = [stmt.strip() for stmt in sqlparse.split(query) if stmt.strip()]
         results = []
-        
+
         for statement in statements:
             try:
-                result = ExecuteSqlUtil.execute_single_statement(pool_name,statement)
+                result = ExecuteSqlUtil.execute_single_statement(pool_name, statement)
                 results.append(result)
             except Exception as e:
                 logger.warning(f"SQL执行警告: {e}, SQL: {statement}")
@@ -171,8 +173,9 @@ class ExecuteSqlUtil:
                     success=False,
                     message=f"执行失败: {str(e)}"
                 ))
-                
+
         return results
+
     @classmethod
     def format_result(cls, result: SQLResult) -> str:
         """格式化SQL执行结果
@@ -213,7 +216,10 @@ class ExecuteSqlUtil:
 
     @staticmethod
     def extract_operations(sql: str) -> Set[SQLOperation]:
-        """提取SQL语句中的所有操作类型
+        """提取SQL语句的操作类型
+
+        使用 sqlparse 解析 SQL，仅提取每个语句的首关键字作为操作类型，
+        避免误匹配字符串字面量或列名中的关键字（如 ``SELECT * FROM t WHERE c = 'DELETE'``）。
 
         Args:
             sql: SQL语句
@@ -221,18 +227,44 @@ class ExecuteSqlUtil:
         Returns:
             操作类型集合
         """
-        sql = ExecuteSqlUtil.clean_sql(sql.upper())
-        return {
-            op for op in SQLOperation
-            if re.search(rf'\b{op.value}\b', sql)
-        }
+        operations: Set[SQLOperation] = set()
+        parsed_statements = sqlparse.parse(sql)
+
+        for parsed in parsed_statements:
+            # 获取语句的首个 DML/DDL 关键字
+            statement_type = parsed.get_type()
+            if not statement_type or statement_type == "UNKNOWN":
+                # 对于 SHOW/DESCRIBE/EXPLAIN 等 sqlparse 无法识别的语句，
+                # 回退到提取首个非空白、非注释 token
+                tokens = [
+                    t for t in parsed.flatten()
+                    if not t.is_whitespace
+                    and t.ttype not in sqlparse.tokens.Comment
+                ]
+                if tokens:
+                    first_keyword = tokens[0].value.upper().strip()
+                    try:
+                        operations.add(SQLOperation.from_str(first_keyword))
+                    except ValueError:
+                        # 无法识别的关键字，跳过
+                        continue
+            else:
+                # sqlparse 返回的类型是字符串，如 "SELECT"、"INSERT"、"UPDATE"、"DELETE"、
+                # "CREATE"、"ALTER"、"DROP" 等
+                try:
+                    operations.add(SQLOperation.from_str(statement_type))
+                except ValueError:
+                    continue
+
+        return operations
 
     @staticmethod
-    def check_permissions(operations: Set[SQLOperation]) -> bool:
-        """检查操作权限
+    def check_permissions(operations: Set[SQLOperation], pool_name: str = "default") -> bool:
+        """检查操作权限（委托给 SqlPermissionPolicy）
 
         Args:
             operations: 操作类型集合
+            pool_name: 连接池名称，用于获取对应数据库的角色配置
 
         Returns:
             是否有权限执行所有操作
@@ -240,14 +272,6 @@ class ExecuteSqlUtil:
         Raises:
             SQLPermissionError: 当权限不足时
         """
-        config = get_db_config()
-        role = config.get("role", "readonly")  # 默认为只读角色
-        allowed = {SQLOperation.from_str(op) for op in get_role_permissions(role)}
-        unauthorized = operations - allowed
-
-        if unauthorized:
-            raise SQLPermissionError(
-                f"权限不足: 当前角色无权执行以下操作: {', '.join(op.value for op in unauthorized)}"
-            )
-        return True
+        policy = SqlPermissionPolicy()
+        return policy.check_permissions(pool_name, operations)
 

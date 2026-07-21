@@ -2,6 +2,7 @@ from typing import Dict, Sequence, Any
 
 from mcp.types import TextContent, Tool
 
+from datasource.base import Paradigm
 from core.exceptions import SQLExecutionError
 from tools.base import ToolsBase
 from utils.execute_sql_util import ExecuteSqlUtil
@@ -9,13 +10,15 @@ from utils.execute_sql_util import ExecuteSqlUtil
 
 class ExecuteSQLTool(ToolsBase):
     """SQL 执行工具类
-    
+
     该工具专门用于执行由 sql_creator 生成的 SQL 语句。它不应该直接执行模型自行构造的 SQL，
     而应在 sql_creator 成功生成 SQL 后调用此工具进行执行。支持执行多条 SQL 语句（以分号分隔）。
     """
 
     # 工具名称
     name = "execute_sql"
+    # 仅适用于关系型数据库
+    applicable_paradigms = [Paradigm.RELATIONAL]
     # 工具描述，包含中英文说明和使用规范
     description = ("该工具仅用于执行由 sql_creator 生成的 SQL。禁止在此工具中直接输入模型自行构造或推测的 SQL 语句。"
                    "通常在 sql_creator 成功生成 SQL 后，才应调用此工具进行执行。"

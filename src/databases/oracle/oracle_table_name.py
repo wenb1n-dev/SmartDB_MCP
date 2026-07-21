@@ -11,8 +11,8 @@ class OracleTableName(TableName):
         if database is None:
             database = db_config.get("database")
 
-        sql = OracleQueries.get_table_names(database, text)
+        sql, params = OracleQueries.get_table_names(database, text)
 
-        sql_result = ExecuteSqlUtil.execute_single_statement(pool_name, sql)
+        sql_result = ExecuteSqlUtil.execute_single_statement(pool_name, sql, params)
 
         return ExecuteSqlUtil.format_result(sql_result)

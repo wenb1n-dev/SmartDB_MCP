@@ -2,6 +2,26 @@ import os
 import json
 from typing import Dict, List, Any
 
+from config.settings import get_settings
+
+
+def _resolve_config_file() -> str:
+    """Resolve the database config file path.
+
+    Priority:
+        1. ``DATABASE_CONFIG_FILE`` environment variable
+        2. ``Settings.database_config_file`` (populated from env)
+        3. Default ``src/config/database_config.json``
+    """
+    env_path = os.getenv("DATABASE_CONFIG_FILE")
+    if env_path:
+        return env_path
+    settings_path = get_settings().database_config_file
+    if settings_path:
+        return settings_path
+    return os.path.join(os.path.dirname(__file__), "database_config.json")
+
+
 def get_db_configs() -> Dict[str, Dict[str, Any]]:
     """从环境变量或配置文件获取多个数据库配置信息
 
@@ -26,11 +46,7 @@ def get_db_configs() -> Dict[str, Dict[str, Any]]:
     异常:
         ValueError: 当必需的配置信息缺失时抛出
     """
-    # 加载.env文件
-    #load_dotenv()
-
-    # 优先从配置文件读取
-    config_file = os.getenv("DATABASE_CONFIG_FILE", os.path.join(os.path.dirname(__file__), "database_config.json"))
+    config_file = _resolve_config_file()
 
     if os.path.exists(config_file):
         try:
@@ -55,9 +71,13 @@ def get_db_configs() -> Dict[str, Dict[str, Any]]:
 
 def _validate_db_configs(db_configs: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     """验证数据库配置的完整性"""
+    # 不需要 user/password 的数据库类型
+    _NO_AUTH_TYPES = {"redis", "mongodb"}
+
     validated_configs = {}
-    
+
     for db_name, config in db_configs.items():
+        db_type = config.get("type", "")
         # 设置默认值
         validated_config = {
             "host": config.get("host", "localhost"),
@@ -70,17 +90,31 @@ def _validate_db_configs(db_configs: Dict[str, Dict[str, Any]]) -> Dict[str, Dic
             "max_overflow": int(config.get("max_overflow", "20")),
             "pool_recycle": int(config.get("pool_recycle", "3600")),
             "pool_timeout": int(config.get("pool_timeout", "30")),
-            "type": config.get("type"),
+            "type": db_type,
             "schema": config.get("schema"),
-            "service_name": config.get("service_name")
+            "service_name": config.get("service_name"),
         }
-        
-        # 验证必需字段
-        if not all([validated_config["user"], validated_config["password"]]):
-            raise ValueError(f"数据库 '{db_name}' 缺少必需的配置信息")
-        
+
+        # Redis 特有字段
+        if db_type == "redis":
+            validated_config["db"] = int(config.get("db", 0))
+
+        # MongoDB 特有字段
+        if db_type == "mongodb":
+            validated_config["auth_source"] = config.get("auth_source", "admin")
+            validated_config["min_pool_size"] = int(config.get("min_pool_size", 5))
+
+        # 验证必需字段：关系型数据库需要 user/password，非关系型不一定需要
+        if db_type not in _NO_AUTH_TYPES:
+            if not all([validated_config["user"], validated_config["password"]]):
+                raise ValueError(f"数据库 '{db_name}' 缺少必需的配置信息")
+
+        # 所有类型都需要 type 字段
+        if not db_type:
+            raise ValueError(f"数据库 '{db_name}' 缺少 type 配置")
+
         validated_configs[db_name] = validated_config
-    
+
     return validated_configs
 
 def get_db_config() -> Dict[str, Any]:

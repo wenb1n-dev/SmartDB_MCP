@@ -1,31 +1,26 @@
-from typing import List
+from typing import List, Tuple, Dict, Any
+
+from utils.sql_safety import build_in_params
 
 
 class PostgresqlQueries:
     @staticmethod
     def get_db_version() -> str:
-        """
-        获取数据库版本的SQL查询
-
-        Returns:
-            SQL查询语句
-        """
+        """获取数据库版本的SQL查询"""
         return "SELECT version();"
 
     @staticmethod
-    def get_table_names(schema: str, text: str) -> str:
-        """
-        根据注释获取表名的SQL查询
+    def get_table_names(schema: str, text: str) -> Tuple[str, Dict[str, Any]]:
+        """根据注释获取表名的SQL查询（参数绑定防注入）
 
         Args:
-            schema: 数据库名称
+            schema: 模式名称
             text: 表注释关键词
 
         Returns:
-            SQL查询语句
+            (SQL模板, 参数字典)
         """
-
-        sql = f"""
+        sql = """
         SELECT
             schemaname AS table_schema,
             tablename AS table_name,
@@ -33,31 +28,24 @@ class PostgresqlQueries:
         FROM
             pg_tables
         WHERE
-            schemaname = '{ schema}'
+            schemaname = :schema
         """
+        params: Dict[str, Any] = {"schema": schema}
 
         if "SEARCH_ALL_TABLES" != text:
             sql += (
-                f"AND( obj_description((schemaname || '.' || tablename)::regclass, 'pg_class') LIKE '%{text}%'"
-                f"or tablename LIKE '%{text}%' )"
+                " AND (obj_description((schemaname || '.' || tablename)::regclass, 'pg_class') LIKE :keyword"
+                " OR tablename LIKE :keyword)"
             )
+            params["keyword"] = f"%{text}%"
 
-        return sql
+        return sql, params
 
     @staticmethod
-    def get_table_description(schema: str, table_names: List[str]) -> str:
-        """
-        获取表结构描述的SQL查询
-
-        Args:
-            database: 数据库名称
-            table_names: 表名列表
-
-        Returns:
-            SQL查询语句
-        """
-        table_condition = "','".join(table_names)
-        return f"""
+    def get_table_description(schema: str, table_names: List[str]) -> Tuple[str, Dict[str, Any]]:
+        """获取表结构描述的SQL查询（参数绑定防注入）"""
+        in_clause, params = build_in_params("table_name", table_names)
+        sql = f"""
             SELECT
                 col.table_name AS "TABLE_NAME",
                 col.column_name AS "COLUMN_NAME",
@@ -74,18 +62,20 @@ class PostgresqlQueries:
                 pg_description pgd ON pgd.objoid = pgc.oid
                     AND pgd.objsubid = col.ordinal_position
             WHERE
-                col.table_schema = '{schema}'   
-              AND col.table_name IN  ('{table_condition}')  
+                col.table_schema = :schema
+              AND col.table_name IN {in_clause}
             ORDER BY
                 col.table_name,
                 col.ordinal_position;
-                   """
+        """
+        params["schema"] = schema
+        return sql, params
 
     @staticmethod
-    def get_table_index(schema: str, table_names: List[str]) -> str:
-        table_condition = "','".join(table_names)
-
-        return f"""
+    def get_table_index(schema: str, table_names: List[str]) -> Tuple[str, Dict[str, Any]]:
+        """获取表索引的SQL查询（参数绑定防注入）"""
+        in_clause, params = build_in_params("table_name", table_names)
+        sql = f"""
             SELECT
                 t.relname AS TABLE_NAME,
                 i.relname AS INDEX_NAME,
@@ -114,28 +104,31 @@ class PostgresqlQueries:
                     JOIN
                 pg_attribute a ON a.attrelid = t.oid AND a.attnum = idx_positions.attnum
             WHERE
-                n.nspname = '{schema}'  
-              AND t.relname IN ('{table_condition}') 
-              AND t.relkind = 'r'   
+                n.nspname = :schema
+              AND t.relname IN {in_clause}
+              AND t.relkind = 'r'
             ORDER BY
                 t.relname, i.relname, idx_positions.ordinality;
         """
+        params["schema"] = schema
+        return sql, params
 
     @staticmethod
-    def get_max_connections() :
+    def get_max_connections():
         return """
-            SELECT 
-            setting AS max_connections 
-        FROM 
-            pg_settings 
-        WHERE 
+            SELECT
+            setting AS max_connections
+        FROM
+            pg_settings
+        WHERE
             name = 'max_connections';
         """
 
     @staticmethod
-    def get_current_connections(database: str) :
-        return f"""
-            SELECT 
+    def get_current_connections(database: str) -> Tuple[str, Dict[str, Any]]:
+        """获取当前连接（参数绑定防注入）"""
+        sql = """
+            SELECT
               pid,
               usename,
               application_name,
@@ -145,28 +138,29 @@ class PostgresqlQueries:
               query,
               query_start,
               state_change
-          FROM pg_stat_activity 
-          WHERE datname = '{database}'
+          FROM pg_stat_activity
+          WHERE datname = :database
           ORDER BY backend_start;
         """
+        return sql, {"database": database}
 
     @staticmethod
     def get_locking():
         return """
-        SELECT 
+        SELECT
             blocked_locks.pid     AS blocked_pid,
             blocked_activity.usename  AS blocked_user,
             blocking_locks.pid     AS blocking_pid,
             blocking_activity.usename AS blocking_user,
             blocked_activity.query    AS blocked_statement,
             blocking_activity.query   AS current_statement_in_blocking_process
-        FROM 
+        FROM
             pg_catalog.pg_locks blocked_locks
-        JOIN 
-            pg_catalog.pg_stat_activity blocked_activity 
+        JOIN
+            pg_catalog.pg_stat_activity blocked_activity
             ON blocked_activity.pid = blocked_locks.pid
-        JOIN 
-            pg_catalog.pg_locks blocking_locks 
+        JOIN
+            pg_catalog.pg_locks blocking_locks
             ON blocking_locks.locktype = blocked_locks.locktype
             AND blocking_locks.DATABASE IS NOT DISTINCT FROM blocked_locks.DATABASE
             AND blocking_locks.relation IS NOT DISTINCT FROM blocked_locks.relation
@@ -178,57 +172,59 @@ class PostgresqlQueries:
             AND blocking_locks.objid IS NOT DISTINCT FROM blocked_locks.objid
             AND blocking_locks.objsubid IS NOT DISTINCT FROM blocked_locks.objsubid
             AND blocking_locks.pid != blocked_locks.pid
-        JOIN 
-            pg_catalog.pg_stat_activity blocking_activity 
+        JOIN
+            pg_catalog.pg_stat_activity blocking_activity
             ON blocking_activity.pid = blocking_locks.pid
-        WHERE 
+        WHERE
             NOT blocked_locks.GRANTED;
         """
 
     @staticmethod
     def get_buffer_pool():
         return """
-        SELECT 
+        SELECT
             SUM(blks_hit) * 100.0 / (SUM(blks_hit) + SUM(blks_read)) AS buffer_hit_ratio
-        FROM 
-            pg_stat_database 
-        WHERE 
+        FROM
+            pg_stat_database
+        WHERE
             datname = current_database();
         """
 
     @staticmethod
     def get_tmp_table():
         return """
-        SELECT 
-            temp_files, 
-            temp_bytes 
-        FROM 
-            pg_stat_database 
-        WHERE 
+        SELECT
+            temp_files,
+            temp_bytes
+        FROM
+            pg_stat_database
+        WHERE
             datname = current_database();
         """
+
     @staticmethod
     def get_io_info():
         return """
-        SELECT 
+        SELECT
             datname AS database,
             blks_read,
             ROUND((blk_read_time / 1000.0)::NUMERIC, 2) AS read_time_s,
             ROUND((blk_write_time / 1000.0)::NUMERIC, 2) AS write_time_s,
-            CASE 
-                WHEN blks_read > 0 
+            CASE
+                WHEN blks_read > 0
                 THEN ROUND((blk_read_time::NUMERIC / blks_read), 3)
-                ELSE 0 
+                ELSE 0
             END AS avg_read_latency_ms
-        FROM 
+        FROM
             pg_stat_database
-        WHERE 
-            datname NOT LIKE 'template%'  
+        WHERE
+            datname NOT LIKE 'template%'
             AND datname IS NOT NULL
             AND blk_read_time IS NOT NULL
-        ORDER BY 
+        ORDER BY
             blk_read_time DESC;
         """
+
     @staticmethod
     def get_database_size():
         return """
@@ -238,7 +234,7 @@ class PostgresqlQueries:
     @staticmethod
     def get_table_top10():
         return """
-        SELECT 
+        SELECT
             schemaname,
             tablename,
             pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS total_size,
@@ -252,7 +248,7 @@ class PostgresqlQueries:
     @staticmethod
     def get_bgwriter_stats():
         return """
-        SELECT 
+        SELECT
             checkpoints_timed,
             checkpoints_req,
             checkpoint_write_time,
@@ -268,7 +264,7 @@ class PostgresqlQueries:
     @staticmethod
     def get_dead_tup():
         return """
-        SELECT 
+        SELECT
           schemaname,
           relname,
           n_live_tup,
@@ -298,10 +294,10 @@ class PostgresqlQueries:
         """
 
     @staticmethod
-    def get_table_size(schema: str, table_names: List[str]) -> str:
-        table_condition = "','".join(table_names)
-
-        return f"""
+    def get_table_size(schema: str, table_names: List[str]) -> Tuple[str, Dict[str, Any]]:
+        """获取表大小（参数绑定防注入）"""
+        in_clause, params = build_in_params("table_name", table_names)
+        sql = f"""
         SELECT
             tablename AS "Table",
             ROUND(
@@ -310,8 +306,10 @@ class PostgresqlQueries:
         FROM
             pg_tables
         WHERE
-            schemaname = '{schema}'  
-          AND tablename IN ('{table_condition}')
+            schemaname = :schema
+          AND tablename IN {in_clause}
         ORDER BY
             pg_total_relation_size(quote_ident(tablename)) DESC;
         """
+        params["schema"] = schema
+        return sql, params

@@ -2,18 +2,21 @@ from typing import Dict, Sequence, Any
 
 from mcp.types import TextContent, Tool
 
+from datasource.base import Paradigm
 from databases.database_factory import DatabaseOperationFactory
 from tools.base import ToolsBase
 
 class GetTableDesc(ToolsBase):
     """数据库表结构查询工具类
-    
+
     该类用于查询指定数据库表的结构信息，包括列名、列注释等详细信息。
     继承自ToolsBase基类，实现了获取工具描述和执行工具的核心方法。
     """
-    
+
     # 工具名称
     name = "get_table_desc"
+    # 仅适用于关系型数据库
+    applicable_paradigms = [Paradigm.RELATIONAL]
     # 工具描述，包含中英文说明和使用注意事项
     description = (
         "数据库表结构查询工具。仅在用户明确要求查看一个或多个具体数据表的详细结构信息（包括列名、列注释等）时使用此工具。"

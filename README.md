@@ -15,15 +15,19 @@ Compared to similar products, SmartDB not only provides basic database connectio
 
 
 ## Currently Supported Databases
-| Database   | Support | Description              |
-|------------|---------|--------------------------|
-| MySQL      | √ | Supports MySQL 5.6+, MariaDB 10+ |
-| PostgreSQL | √ | Supports PostgreSQL 9.6+, YMatrix |
-| Oracle     | √ | Oracle 12+               |
-| SQL Server | √ | Microsoft SQL Server 2012+ |
-| Dameng     | √ | Dameng 8.0+              |
+| Database   | Type | Support | Description              |
+|------------|------|---------|--------------------------|
+| MySQL      | Relational | √ | Supports MySQL 5.6+, MariaDB 10+ |
+| PostgreSQL | Relational | √ | Supports PostgreSQL 9.6+, YMatrix |
+| Oracle     | Relational | √ | Oracle 12+               |
+| SQL Server | Relational | √ | Microsoft SQL Server 2012+ |
+| Dameng     | Relational | √ | Dameng 8.0+              |
+| Redis      | KV Store | √ | Redis 5.0+              |
+| MongoDB    | Document | √ | MongoDB 4.0+            |
 
 ## Tool List
+
+### Relational Database Tools
 | Tool Name | Description                                                                                                                                                                                   |
 |-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | execute_sql | SQL execution tool that can execute ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", "TRUNCATE"] commands based on permission configuration |
@@ -33,7 +37,27 @@ Compared to similar products, SmartDB not only provides basic database connectio
 | get_table_name | Database table name query tool. Used to query all table names in the database or search for corresponding table names based on Chinese table names or table descriptions                      |
 | get_db_version | Database version query tool                                                                                                                                                                   |
 | sql_creator | SQL query generation tool that generates corresponding SQL query statements based on different database types                                                                                 |
-| sql_optimize | A professional SQL performance optimization tool that provides expert optimization suggestions based on execution plans, table structure information, table data volume, and table indexes.   | 
+| sql_optimize | A professional SQL performance optimization tool that provides expert optimization suggestions based on execution plans, table structure information, table data volume, and table indexes.   |
+
+### KV Store Tools (Redis)
+| Tool Name | Description |
+|-----------|-------------|
+| execute_command | Execute Redis commands (GET/SET/HGET/LPUSH etc.) with permission enforcement |
+| get_key_info | Query Redis key details (type, size, TTL, memory usage) |
+| scan_keys | Scan Redis keys by pattern using SCAN command (non-blocking) |
+| get_db_health | Analyze Redis health (connection, memory, slowlog, replication, persistence) |
+| get_db_version | Query Redis version |
+
+### Document Store Tools (MongoDB)
+| Tool Name | Description |
+|-----------|-------------|
+| execute_mongo_query | Execute MongoDB queries (find/aggregate) with filter, projection, sort, pagination |
+| get_collection_schema | Infer collection schema by sampling documents (field names, types, presence) |
+| get_collection_names | List collections in a MongoDB database, with optional name pattern filter |
+| get_collection_indexes | Query index information for a MongoDB collection or all collections |
+| mongo_explain | Analyze MongoDB query execution plan (explain), including query planner and execution stats |
+| get_db_health | Analyze MongoDB health (connection, memory, slowlog, replication, indexes) |
+| get_db_version | Query MongoDB version |
 
 ## Usage
 
@@ -41,6 +65,12 @@ Compared to similar products, SmartDB not only provides basic database connectio
 ```bash
 # Database configuration file path
 DATABASE_CONFIG_FILE=/Volumes/SmartDB/src/config/database_config.json
+
+#========Server========
+# Server listen host
+SERVER_HOST=0.0.0.0
+# Server listen port
+SERVER_PORT=3000
 
 #========OAuth2========
 # OAuth2 client ID
@@ -117,6 +147,27 @@ Note: If you adjust the client ID and key in the oauth configuration, please als
     "pool_recycle": 3600,
     "pool_timeout": 30,
     "type": "mssqlserver"
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6379,
+    "password": "your_redis_password",
+    "db": 0,
+    "role": "readonly",
+    "pool_size": 50,
+    "type": "redis"
+  },
+  "mongodb": {
+    "host": "127.0.0.1",
+    "port": 27017,
+    "user": "your_user",
+    "password": "your_password",
+    "database": "your_database",
+    "auth_source": "admin",
+    "role": "readonly",
+    "pool_size": 50,
+    "min_pool_size": 5,
+    "type": "mongodb"
   }
 }
 ```
@@ -129,15 +180,15 @@ The following table details the meaning and usage of each parameter in the datab
 |-----------|----------|------|-------------|
 | host | Yes | string | Database server address |
 | port | Yes | integer | Database server port number |
-| user | Yes | string | Database username |
-| password | Yes | string | Database user password |
-| database | Yes | string | Database name to connect to |
+| user | Relational, MongoDB | string | Database username |
+| password | Relational, MongoDB | string | Database user password |
+| database | Relational, MongoDB | string | Database name to connect to |
 | role | Yes | string | User role, such as "readonly" for read-only permissions |
 | pool_size | Yes | integer | Connection pool size |
-| max_overflow | Yes | integer | Maximum overflow connections in connection pool |
-| pool_recycle | Yes | integer | Connection pool recycle time (seconds) |
-| pool_timeout | Yes | integer | Connection pool timeout time (seconds) |
-| type | Yes | string | Database type, such as "mysql", "postgresql", "oracle", "mssqlserver" |
+| max_overflow | Relational | integer | Maximum overflow connections in connection pool |
+| pool_recycle | Relational | integer | Connection pool recycle time (seconds) |
+| pool_timeout | Relational | integer | Connection pool timeout time (seconds) |
+| type | Yes | string | Database type: "mysql", "postgresql", "oracle", "mssqlserver", "dameng", "redis", "mongodb" |
 
 * Additional Parameters for Specific Databases
 
@@ -145,6 +196,9 @@ The following table details the meaning and usage of each parameter in the datab
 |-----------|---------------|----------|------|-------------|
 | schema | PostgreSQL, SQL Server | No | string | Database schema |
 | service_name | Oracle | No | string | Oracle service name |
+| db | Redis | No | integer | Redis database index, default 0 |
+| auth_source | MongoDB | No | string | Authentication database, default "admin" |
+| min_pool_size | MongoDB | No | integer | Minimum pool size, default 5 |
 
 * role permission control configuration items and corresponding database permissions: readonly (readonly), read/write (writer), administrator (admin)
 ```
