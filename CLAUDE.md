@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 SmartDB 是一个通用数据库网关，实现 MCP (Model Context Protocol) 服务器接口，允许 MCP 客户端连接并操作多种数据库。除基础连接探索外，还提供 OAuth 2.0 认证、健康检查、SQL 优化、索引健康检测等高级功能。
 
-支持数据库：MySQL、PostgreSQL、Oracle、SQL Server、达梦 (DM8)、Redis (KV)、MongoDB (文档)。
+支持数据库：MySQL、PostgreSQL、Oracle、SQL Server、达梦 (DM8)、Redis (KV)、MongoDB (文档)、Milvus (向量)。
 
 ## Common Commands
 
@@ -87,8 +87,8 @@ src/static/login/         — Vue 构建产物（OAuth 登录页，勿手改）
 **`src/config/database_config.json`** — 数据库连接配置
 - `default` key 为必需项，其他按需添加
 - 通用字段：`host/port/user/password/database/role/pool_size/max_overflow/pool_recycle/pool_timeout/type`
-- 特殊字段：`schema`（PG/SQL Server）、`service_name`（Oracle）、`db`（Redis）、`auth_source`/`min_pool_size`（MongoDB）
-- `type` 取值：`mysql` / `postgresql` / `oracle` / `mssqlserver` / `dameng` / `redis` / `mongodb`
+- 特殊字段：`schema`（PG/SQL Server）、`service_name`（Oracle）、`db`（Redis）、`auth_source`/`min_pool_size`（MongoDB）、`token`（Milvus）
+- `type` 取值：`mysql` / `postgresql` / `oracle` / `mssqlserver` / `dameng` / `redis` / `mongodb` / `milvus`
 - 配置文件路径由环境变量 `DATABASE_CONFIG_FILE` 指定，默认 `src/config/database_config.json`
 
 **`src/config/.env`** — OAuth 与环境配置
@@ -118,6 +118,9 @@ src/static/login/         — Vue 构建产物（OAuth 登录页，勿手改）
 | `get_collection_names` | 查询 MongoDB 集合列表（文档范式） |
 | `get_collection_indexes` | 查询 MongoDB 集合索引（文档范式） |
 | `mongo_explain` | MongoDB 查询执行计划分析（文档范式） |
+| `execute_vector_search` | 向量相似度搜索（向量范式） |
+| `get_collection_info` | 查询向量集合元数据（向量范式） |
+| `get_vector_index_info` | 查询向量索引信息（向量范式） |
 
 ### OAuth 2.0 流程
 
@@ -159,7 +162,7 @@ src/static/login/         — Vue 构建产物（OAuth 登录页，勿手改）
 - 模块导入使用绝对路径（如 `from config.dbconfig import ...`），依赖 `PYTHONPATH=src`（Docker 中已配置）
 
 ### 打包说明
-`pyproject.toml` 使用 hatchling 作为构建后端，wheel 包含 `src/core`、`src/config`、`src/connection`、`src/tools`、`src/oauth`、`src/utils`、`src/databases`、`src/datasource`、`src/permission`、`src/static` 及 `src/datasource/` 下的范式子目录。修改这些目录结构时需同步更新 `[tool.hatch.build.targets.wheel]` 配置。
+`pyproject.toml` 使用 hatchling 作为构建后端，wheel 包含 `src/core`、`src/config`、`src/connection`、`src/tools`、`src/oauth`、`src/utils`、`src/databases`、`src/datasource`、`src/permission`、`src/static` 及 `src/datasource/` 下的范式子目录（kv/document/vector）。修改这些目录结构时需同步更新 `[tool.hatch.build.targets.wheel]` 配置。
 
 ## 重构项目：多范式数据源集成
 

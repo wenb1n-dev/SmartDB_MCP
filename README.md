@@ -24,6 +24,7 @@ Compared to similar products, SmartDB not only provides basic database connectio
 | Dameng     | Relational | √ | Dameng 8.0+              |
 | Redis      | KV Store | √ | Redis 5.0+              |
 | MongoDB    | Document | √ | MongoDB 4.0+            |
+| Milvus     | Vector | √ | Milvus 2.3+             |
 
 ## Tool List
 
@@ -58,6 +59,15 @@ Compared to similar products, SmartDB not only provides basic database connectio
 | mongo_explain | Analyze MongoDB query execution plan (explain), including query planner and execution stats |
 | get_db_health | Analyze MongoDB health (connection, memory, slowlog, replication, indexes) |
 | get_db_version | Query MongoDB version |
+
+### Vector Store Tools (Milvus)
+| Tool Name | Description |
+|-----------|-------------|
+| execute_vector_search | Execute vector similarity search on a collection, returning top-K nearest neighbors |
+| get_collection_info | Query vector collection metadata (dimension, metric type, schema, entity count) |
+| get_vector_index_info | Query vector index information (index type, parameters, build progress) |
+| get_db_health | Analyze Milvus health (connection, memory, indexes, latency, nodes) |
+| get_db_version | Query Milvus version |
 
 ## Usage
 
@@ -168,6 +178,16 @@ Note: If you adjust the client ID and key in the oauth configuration, please als
     "pool_size": 50,
     "min_pool_size": 5,
     "type": "mongodb"
+  },
+  "milvus": {
+    "host": "127.0.0.1",
+    "port": 19530,
+    "user": "your_user",
+    "password": "your_password",
+    "database": "default",
+    "role": "readonly",
+    "pool_size": 10,
+    "type": "milvus"
   }
 }
 ```
@@ -180,15 +200,15 @@ The following table details the meaning and usage of each parameter in the datab
 |-----------|----------|------|-------------|
 | host | Yes | string | Database server address |
 | port | Yes | integer | Database server port number |
-| user | Relational, MongoDB | string | Database username |
-| password | Relational, MongoDB | string | Database user password |
-| database | Relational, MongoDB | string | Database name to connect to |
+| user | Relational, MongoDB, Milvus | string | Database username |
+| password | Relational, MongoDB, Milvus | string | Database user password |
+| database | Relational, MongoDB, Milvus | string | Database name to connect to |
 | role | Yes | string | User role, such as "readonly" for read-only permissions |
 | pool_size | Yes | integer | Connection pool size |
 | max_overflow | Relational | integer | Maximum overflow connections in connection pool |
 | pool_recycle | Relational | integer | Connection pool recycle time (seconds) |
 | pool_timeout | Relational | integer | Connection pool timeout time (seconds) |
-| type | Yes | string | Database type: "mysql", "postgresql", "oracle", "mssqlserver", "dameng", "redis", "mongodb" |
+| type | Yes | string | Database type: "mysql", "postgresql", "oracle", "mssqlserver", "dameng", "redis", "mongodb", "milvus" |
 
 * Additional Parameters for Specific Databases
 
@@ -199,6 +219,7 @@ The following table details the meaning and usage of each parameter in the datab
 | db | Redis | No | integer | Redis database index, default 0 |
 | auth_source | MongoDB | No | string | Authentication database, default "admin" |
 | min_pool_size | MongoDB | No | integer | Minimum pool size, default 5 |
+| token | Milvus | No | string | Authentication token (alternative to user/password) |
 
 * role permission control configuration items and corresponding database permissions: readonly (readonly), read/write (writer), administrator (admin)
 ```

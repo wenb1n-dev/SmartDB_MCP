@@ -72,7 +72,7 @@ def get_db_configs() -> Dict[str, Dict[str, Any]]:
 def _validate_db_configs(db_configs: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     """验证数据库配置的完整性"""
     # 不需要 user/password 的数据库类型
-    _NO_AUTH_TYPES = {"redis", "mongodb"}
+    _NO_AUTH_TYPES = {"redis", "mongodb", "milvus"}
 
     validated_configs = {}
 
@@ -103,6 +103,10 @@ def _validate_db_configs(db_configs: Dict[str, Dict[str, Any]]) -> Dict[str, Dic
         if db_type == "mongodb":
             validated_config["auth_source"] = config.get("auth_source", "admin")
             validated_config["min_pool_size"] = int(config.get("min_pool_size", 5))
+
+        # Milvus 特有字段
+        if db_type == "milvus":
+            validated_config["token"] = config.get("token")
 
         # 验证必需字段：关系型数据库需要 user/password，非关系型不一定需要
         if db_type not in _NO_AUTH_TYPES:

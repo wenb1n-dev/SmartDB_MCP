@@ -74,5 +74,15 @@
     "pool_size": 50,
     "min_pool_size": 5,
     "type": "mongodb"
+  },
+  "milvus": {
+    "host": "127.0.0.1",
+    "port": 19530,
+    "user": "your_user",
+    "password": "your_password",
+    "database": "default",
+    "role": "readonly",
+    "pool_size": 10,
+    "type": "milvus"
   }
 }

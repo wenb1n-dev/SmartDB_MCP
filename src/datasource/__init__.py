@@ -44,5 +44,20 @@ def _register_mongodb_factory() -> None:
         pass
 
 
+def _register_milvus_factory() -> None:
+    """Register MilvusFactory with FactoryRegistry.
+
+    Called at import time. Uses a try/except so that the package still
+    loads if the ``pymilvus`` library is not installed.
+    """
+    try:
+        from databases.database_factory import FactoryRegistry
+        from datasource.vector.milvus.milvus_factory import MilvusFactory
+        FactoryRegistry.register(MilvusFactory)
+    except ImportError:
+        pass
+
+
 _register_redis_factory()
 _register_mongodb_factory()
+_register_milvus_factory()

@@ -71,7 +71,7 @@ PermissionPolicy (抽象)
 | Phase 1 | 抽象层拆分 | 8 | 8 | 已完成 |
 | Phase 2 | Redis 集成 | 6 | 6 | 已完成 |
 | Phase 3 | MongoDB 集成 | 5 | 5 | 已完成 |
-| Phase 4 | 向量数据库集成 | 5 | 0 | 未开始 |
+| Phase 4 | 向量数据库集成 | 5 | 5 | 已完成 |
 | Phase 5 | ES + Kafka 集成 | 6 | 0 | 未开始 |
 
 ---
@@ -728,7 +728,7 @@ PermissionPolicy (抽象)
 
 ### Task 4.1：向量数据库连接池实现
 
-- **状态**：`[ ]` 未开始
+- **状态**：`[x]` 已完成
 - **依赖**：Phase 1 完成
 - **涉及文件**：
   - `src/connection/milvus_pool.py`（新增）
@@ -736,14 +736,14 @@ PermissionPolicy (抽象)
   - `pyproject.toml`（修改 - 添加 pymilvus 依赖）
 
 **验收标准**：
-- [ ] `MilvusConnectionPool` 继承 `ConnectionPool`
-- [ ] Milvus 连接池可正常创建和销毁
+- [x] `MilvusConnectionPool` 继承 `ConnectionPool`
+- [x] Milvus 连接池可正常创建和销毁
 
 ---
 
 ### Task 4.2：VectorFactory 抽象与 MilvusFactory 实现
 
-- **状态**：`[ ]` 未开始
+- **状态**：`[x]` 已完成
 - **依赖**：Task 4.1
 - **涉及文件**：
   - `src/datasource/vector/__init__.py`（新增）
@@ -757,15 +757,15 @@ PermissionPolicy (抽象)
   - `src/datasource/vector/milvus/milvus_index_info.py`（新增 - 索引信息）
 
 **验收标准**：
-- [ ] `VectorFactory` 定义向量范式抽象接口
-- [ ] `MilvusFactory` 注册到 `FactoryRegistry`
-- [ ] 向量搜索、集合信息、索引信息功能可用
+- [x] `VectorFactory` 定义向量范式抽象接口
+- [x] `MilvusFactory` 注册到 `FactoryRegistry`
+- [x] 向量搜索、集合信息、索引信息功能可用
 
 ---
 
 ### Task 4.3：向量范式工具集实现
 
-- **状态**：`[ ]` 未开始
+- **状态**：`[x]` 已完成
 - **依赖**：Task 4.2
 - **涉及文件**：
   - `src/tools/vector_search.py`（新增 - execute_vector_search 工具）
@@ -773,30 +773,30 @@ PermissionPolicy (抽象)
   - `src/tools/get_vector_index_info.py`（新增 - 向量索引信息）
 
 **验收标准**：
-- [ ] 3 个向量范式工具自动注册
-- [ ] 向量搜索工具支持相似度查询
-- [ ] 集合信息工具返回维度、距离度量等
-- [ ] 索引信息工具返回索引类型（HNSW/IVF）、参数
+- [x] 3 个向量范式工具自动注册
+- [x] 向量搜索工具支持相似度查询
+- [x] 集合信息工具返回维度、距离度量等
+- [x] 索引信息工具返回索引类型（HNSW/IVF）、参数
 
 ---
 
 ### Task 4.4：Milvus 权限模型与健康检查
 
-- **状态**：`[ ]` 未开始
+- **状态**：`[x]` 已完成
 - **依赖**：Task 4.2
 - **涉及文件**：
   - `src/permission/milvus_permission.py`（新增）
   - `src/datasource/vector/milvus/milvus_health.py`（完善）
 
 **验收标准**：
-- [ ] `MilvusPermissionPolicy` 映射角色到 Milvus 操作
-- [ ] 健康检查覆盖：节点状态、索引构建进度、查询延迟、内存使用
+- [x] `MilvusPermissionPolicy` 映射角色到 Milvus 操作
+- [x] 健康检查覆盖：节点状态、索引构建进度、查询延迟、内存使用
 
 ---
 
 ### Task 4.5：向量数据库集成验证与文档
 
-- **状态**：`[ ]` 未开始
+- **状态**：`[x]` 已完成
 - **依赖**：Task 4.1 ~ Task 4.4
 - **涉及文件**：
   - `src/config/database_config.example.json`（修改）
@@ -804,10 +804,10 @@ PermissionPolicy (抽象)
   - `README-zh.md`（修改）
 
 **验收标准**：
-- [ ] Milvus 连接池初始化正常
-- [ ] 向量范式工具可用
-- [ ] 混合 pool 场景下工具按范式正确暴露
-- [ ] 文档更新完成
+- [x] Milvus 连接池初始化正常
+- [x] 向量范式工具可用
+- [x] 混合 pool 场景下工具按范式正确暴露
+- [x] 文档更新完成
 
 ---
 

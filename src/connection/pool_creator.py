@@ -6,6 +6,7 @@ from connection.base import ConnectionPool
 from connection.connection_pool import SQLAlchemyConnectionPool
 from connection.redis_pool import RedisConnectionPool
 from connection.mongodb_pool import MongoDBConnectionPool
+from connection.milvus_pool import MilvusConnectionPool
 
 
 class DatabasePoolCreator(ABC):
@@ -144,6 +145,20 @@ class MongoDBPoolCreator(DatabasePoolCreator):
         )
 
 
+class MilvusPoolCreator(DatabasePoolCreator):
+    """Milvus 连接池创建器"""
+    def create_pool(self, pool_name: str, config: Dict[str, Any]) -> ConnectionPool:
+        return MilvusConnectionPool(
+            host=config.get("host", "127.0.0.1"),
+            port=int(config.get("port", 19530)),
+            user=config.get("user"),
+            password=config.get("password"),
+            database=config.get("database", "default"),
+            token=config.get("token"),
+            pool_size=int(config.get("pool_size", 10)),
+        )
+
+
 class DatabasePoolFactory:
     """数据库连接池工厂类
 
@@ -159,6 +174,7 @@ class DatabasePoolFactory:
         "dameng": DamengPoolCreator(),
         "redis": RedisPoolCreator(),
         "mongodb": MongoDBPoolCreator(),
+        "milvus": MilvusPoolCreator(),
     }
 
     @classmethod

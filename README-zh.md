@@ -22,6 +22,7 @@ SmartDB是一个通用数据库网关，实现了模型上下文协议（Model C
 | 达梦数据库 | 关系型 | √  | DM8                         |
 | Redis | KV 存储 | √  | Redis 5.0+                  |
 | MongoDB | 文档型 | √  | MongoDB 4.0+                |
+| Milvus | 向量型 | √  | Milvus 2.3+                 |
 
 # 工具列表
 
@@ -56,6 +57,15 @@ SmartDB是一个通用数据库网关，实现了模型上下文协议（Model C
 | mongo_explain | 分析 MongoDB 查询执行计划，包括查询计划、执行统计、索引使用情况          |
 | get_db_health | 分析 MongoDB 健康状态（连接、内存、慢查询、复制、索引），输出诊断报告    |
 | get_db_version | 查询 MongoDB 版本号                                                  |
+
+## 向量存储工具（Milvus）
+| 工具名称            | 描述                                                                 |
+|-----------------|--------------------------------------------------------------------|
+| execute_vector_search | 在向量集合中执行相似度搜索，返回最近的 K 个邻居                           |
+| get_collection_info | 查询向量集合的元数据（维度、距离度量、Schema、实体数量等）                   |
+| get_vector_index_info | 查询向量集合的索引信息（索引类型、参数、构建进度等）                        |
+| get_db_health | 分析 Milvus 健康状态（连接、内存、索引、延迟、节点），输出诊断报告        |
+| get_db_version | 查询 Milvus 版本号                                                  |
 
 # 使用方法
 ## env 配置文件说明
@@ -167,6 +177,16 @@ OAUTH_USER_PASSWORD=wenb1n
     "pool_size": 50,
     "min_pool_size": 5,
     "type": "mongodb"
+  },
+  "milvus": {
+    "host": "127.0.0.1",
+    "port": 19530,
+    "user": "your_user",
+    "password": "your_password",
+    "database": "default",
+    "role": "readonly",
+    "pool_size": 10,
+    "type": "milvus"
   }
 }
 
@@ -179,15 +199,15 @@ OAUTH_USER_PASSWORD=wenb1n
 |--------|------|------|------|
 | host | 是 | string | 数据库服务器地址 |
 | port | 是 | integer | 数据库服务器端口号 |
-| user | 关系型、MongoDB 必需 | string | 数据库用户名 |
-| password | 关系型、MongoDB 必需 | string | 数据库用户密码 |
-| database | 关系型、MongoDB 必需 | string | 要连接的数据库名称 |
+| user | 关系型、MongoDB、Milvus 必需 | string | 数据库用户名 |
+| password | 关系型、MongoDB、Milvus 必需 | string | 数据库用户密码 |
+| database | 关系型、MongoDB、Milvus 必需 | string | 要连接的数据库名称 |
 | role | 是 | string | 用户角色，如 "readonly" 表示只读权限 |
 | pool_size | 是 | integer | 连接池大小 |
 | max_overflow | 关系型 | integer | 连接池最大溢出连接数 |
 | pool_recycle | 关系型 | integer | 连接池回收时间（秒） |
 | pool_timeout | 关系型 | integer | 连接池超时时间（秒） |
-| type | 是 | string | 数据库类型，如 "mysql"、"postgresql"、"oracle"、"mssqlserver"、"dameng"、"redis"、"mongodb" |
+| type | 是 | string | 数据库类型，如 "mysql"、"postgresql"、"oracle"、"mssqlserver"、"dameng"、"redis"、"mongodb"、"milvus" |
 
 * 特定数据库额外参数
 
@@ -198,6 +218,7 @@ OAUTH_USER_PASSWORD=wenb1n
 | db | Redis | 否 | integer | Redis 数据库索引，默认 0 |
 | auth_source | MongoDB | 否 | string | 认证数据库，默认 "admin" |
 | min_pool_size | MongoDB | 否 | integer | 最小连接池大小，默认 5 |
+| token | Milvus | 否 | string | 认证令牌（替代 user/password） |
 
 * role 权限控制配置项以及对应数据库权限：只读（readonly）、读写（writer）、管理员（admin）
 ```
