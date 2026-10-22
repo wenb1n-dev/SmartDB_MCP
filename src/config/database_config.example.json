@@ -84,5 +84,25 @@
     "role": "readonly",
     "pool_size": 10,
     "type": "milvus"
+  },
+  "elasticsearch": {
+    "host": "127.0.0.1",
+    "port": 9200,
+    "user": "your_user",
+    "password": "your_password",
+    "use_ssl": false,
+    "verify_certs": true,
+    "role": "readonly",
+    "pool_size": 10,
+    "type": "elasticsearch"
+  },
+  "kafka": {
+    "host": "127.0.0.1",
+    "port": 9092,
+    "user": "your_user",
+    "password": "your_password",
+    "role": "readonly",
+    "pool_size": 10,
+    "type": "kafka"
   }
 }

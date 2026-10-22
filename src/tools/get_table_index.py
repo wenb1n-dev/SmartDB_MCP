@@ -3,10 +3,11 @@ from typing import Dict, Sequence, Any
 from mcp.types import TextContent, Tool
 
 from datasource.base import Paradigm
-from databases.database_factory import DatabaseOperationFactory
+from datasource.registry import FactoryRegistry
+from datasource.relational.base import RelationalDataSourceFactory
 from tools.base import ToolsBase
 
-class GetTableIndex(ToolsBase):
+class GetTableIndexTool(ToolsBase):
     """数据库表索引查询工具类
 
     该类用于查询指定数据库表的索引信息。
@@ -101,7 +102,7 @@ class GetTableIndex(ToolsBase):
             schema = schema if schema != "default" else None
 
             # 根据连接池名称获取对应的数据库工厂实例
-            factory = DatabaseOperationFactory.get_factory_by_pool_name(pool_name)
+            factory = FactoryRegistry.get_factory_by_pool_name(pool_name)
 
             # 创建表索引查询处理器实例
             handler = factory.create_table_index()

@@ -7,6 +7,8 @@ from connection.connection_pool import SQLAlchemyConnectionPool
 from connection.redis_pool import RedisConnectionPool
 from connection.mongodb_pool import MongoDBConnectionPool
 from connection.milvus_pool import MilvusConnectionPool
+from connection.elasticsearch_pool import ElasticsearchConnectionPool
+from connection.kafka_pool import KafkaConnectionPool
 
 
 class DatabasePoolCreator(ABC):
@@ -159,6 +161,32 @@ class MilvusPoolCreator(DatabasePoolCreator):
         )
 
 
+class ElasticsearchPoolCreator(DatabasePoolCreator):
+    """Elasticsearch 连接池创建器"""
+    def create_pool(self, pool_name: str, config: Dict[str, Any]) -> ConnectionPool:
+        return ElasticsearchConnectionPool(
+            host=config.get("host", "127.0.0.1"),
+            port=int(config.get("port", 9200)),
+            user=config.get("user"),
+            password=config.get("password"),
+            use_ssl=bool(config.get("use_ssl", False)),
+            verify_certs=bool(config.get("verify_certs", True)),
+            pool_size=int(config.get("pool_size", 10)),
+        )
+
+
+class KafkaPoolCreator(DatabasePoolCreator):
+    """Kafka 连接池创建器"""
+    def create_pool(self, pool_name: str, config: Dict[str, Any]) -> ConnectionPool:
+        return KafkaConnectionPool(
+            host=config.get("host", "127.0.0.1"),
+            port=int(config.get("port", 9092)),
+            user=config.get("user"),
+            password=config.get("password"),
+            pool_size=int(config.get("pool_size", 10)),
+        )
+
+
 class DatabasePoolFactory:
     """数据库连接池工厂类
 
@@ -175,6 +203,8 @@ class DatabasePoolFactory:
         "redis": RedisPoolCreator(),
         "mongodb": MongoDBPoolCreator(),
         "milvus": MilvusPoolCreator(),
+        "elasticsearch": ElasticsearchPoolCreator(),
+        "kafka": KafkaPoolCreator(),
     }
 
     @classmethod

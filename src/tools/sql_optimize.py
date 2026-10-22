@@ -4,10 +4,11 @@ from mcp import Tool
 from mcp.types import TextContent
 
 from datasource.base import Paradigm
-from databases.database_factory import DatabaseOperationFactory
+from datasource.registry import FactoryRegistry
+from datasource.relational.base import RelationalDataSourceFactory
 from tools.base import ToolsBase
 
-class SqlOptimize(ToolsBase):
+class SqlOptimizeTool(ToolsBase):
 
     # 工具名称
     name = "sql_optimize"
@@ -82,7 +83,7 @@ class SqlOptimize(ToolsBase):
 
         tables_group = self._parse_tables(arguments.get("tables"))
 
-        factory = DatabaseOperationFactory.get_factory_by_pool_name(pool_name)
+        factory = FactoryRegistry.get_factory_by_pool_name(pool_name)
         # 获取数据库版本
         db_version = factory.create_db_version().get_db_version(pool_name)
 

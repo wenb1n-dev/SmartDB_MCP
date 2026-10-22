@@ -28,7 +28,7 @@ from config.event_store import InMemoryEventStore
 from config.dbconfig import get_db_config_by_name
 from config.settings import get_settings
 from datasource.base import Paradigm
-from databases.database_factory import FactoryRegistry
+from datasource.registry import FactoryRegistry
 
 
 

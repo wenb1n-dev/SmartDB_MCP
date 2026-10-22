@@ -1,0 +1,21 @@
+from config.dbconfig import get_db_config_by_name
+from datasource.relational.base import TableIndex
+from datasource.relational.oracle.oracle_queries import OracleQueries
+from utils.execute_sql_util import ExecuteSqlUtil
+
+
+class OracleTableIndex(TableIndex):
+    def get_table_index(self, pool_name: str, database: str, schema: str, table_name: str) -> str:
+        db_config = get_db_config_by_name(pool_name)
+
+        if database is None:
+            database = db_config.get("database")
+
+        # 将输入的表名按逗号分割成列表
+        table_names = [name.strip() for name in table_name.split(',')]
+
+        sql, params = OracleQueries.get_table_index(database, table_names)
+
+        sql_result = ExecuteSqlUtil.execute_single_statement(pool_name, sql, params)
+
+        return ExecuteSqlUtil.format_result(sql_result)

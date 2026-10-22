@@ -1,0 +1,18 @@
+from config.dbconfig import get_db_config_by_name
+from datasource.relational.base import TableName
+from datasource.relational.oracle.oracle_queries import OracleQueries
+from utils.execute_sql_util import ExecuteSqlUtil
+
+
+class OracleTableName(TableName):
+    def get_table_name(self, pool_name: str, database: str, schema: str, text: str) -> str:
+        db_config = get_db_config_by_name(pool_name)
+
+        if database is None:
+            database = db_config.get("database")
+
+        sql, params = OracleQueries.get_table_names(database, text)
+
+        sql_result = ExecuteSqlUtil.execute_single_statement(pool_name, sql, params)
+
+        return ExecuteSqlUtil.format_result(sql_result)

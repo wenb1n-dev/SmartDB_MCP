@@ -23,8 +23,12 @@ dependencies = [
     "sqlparse>=0.5.0",
     "redis>=5.0.0",
     "pymongo>=4.8.0",
-    "pymilvus>=2.4.0"
-
+    "pymilvus>=2.4.0",
+    "elasticsearch>=8.0.0",
+    # 采用社区维护分叉 kafka-python-ng（导入名仍为 kafka，兼容 2.x 配置项，
+    # 支持 Python 3.12+）。勿用被接管的 kafka-python 3.x（移除配置项且有供应链风险），
+    # 官方 kafka-python 2.0.2 在 Python 3.12+ 存在 kafka.vendor.six.moves 导入缺陷。
+    "kafka-python-ng>=2.2.2",
 ]
 
 [[project.authors]]
@@ -42,7 +46,7 @@ build-backend = "hatchling.build"
 packages = ["src"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/core", "src/config", "src/connection", "src/tools", "src/oauth", "src/utils", "src/databases", "src/datasource", "src/permission", "src/static", "src/datasource/kv", "src/datasource/kv/redis", "src/datasource/document", "src/datasource/document/mongodb", "src/datasource/vector", "src/datasource/vector/milvus"]
+packages = ["src/core", "src/config", "src/connection", "src/tools", "src/oauth", "src/utils", "src/datasource", "src/permission", "src/static", "src/datasource/relational", "src/datasource/relational/mysql", "src/datasource/relational/postgresql", "src/datasource/relational/oracle", "src/datasource/relational/mssqlserver", "src/datasource/relational/dameng", "src/datasource/kv", "src/datasource/kv/redis", "src/datasource/document", "src/datasource/document/mongodb", "src/datasource/vector", "src/datasource/vector/milvus", "src/datasource/search_engine", "src/datasource/search_engine/elasticsearch", "src/datasource/message_queue", "src/datasource/message_queue/kafka"]
 
 [project.urls]
 Homepage = "https://github.com/wenb1n-dev/SmartDB_MCP"

@@ -3,10 +3,11 @@ from typing import Dict, Sequence, Any
 from mcp.types import TextContent, Tool
 
 from datasource.base import Paradigm
-from databases.database_factory import DatabaseOperationFactory
+from datasource.registry import FactoryRegistry
+from datasource.relational.base import RelationalDataSourceFactory
 from tools.base import ToolsBase
 
-class GetTableName(ToolsBase):
+class GetTableNameTool(ToolsBase):
     """数据库表名查询工具类
 
     该类用于查询数据库中的所有表名或根据表的中文名称/描述搜索对应的表名。
@@ -104,7 +105,7 @@ class GetTableName(ToolsBase):
             schema = schema if schema != "default" else None
 
             # 根据连接池名称获取对应的数据库工厂实例
-            factory = DatabaseOperationFactory.get_factory_by_pool_name(pool_name)
+            factory = FactoryRegistry.get_factory_by_pool_name(pool_name)
 
             # 创建表名查询处理器实例
             handler = factory.create_table_name()

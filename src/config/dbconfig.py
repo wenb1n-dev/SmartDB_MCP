@@ -72,7 +72,7 @@ def get_db_configs() -> Dict[str, Dict[str, Any]]:
 def _validate_db_configs(db_configs: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     """验证数据库配置的完整性"""
     # 不需要 user/password 的数据库类型
-    _NO_AUTH_TYPES = {"redis", "mongodb", "milvus"}
+    _NO_AUTH_TYPES = {"redis", "mongodb", "milvus", "elasticsearch", "kafka"}
 
     validated_configs = {}
 
@@ -107,6 +107,11 @@ def _validate_db_configs(db_configs: Dict[str, Dict[str, Any]]) -> Dict[str, Dic
         # Milvus 特有字段
         if db_type == "milvus":
             validated_config["token"] = config.get("token")
+
+        # Elasticsearch 特有字段
+        if db_type == "elasticsearch":
+            validated_config["use_ssl"] = bool(config.get("use_ssl", False))
+            validated_config["verify_certs"] = bool(config.get("verify_certs", True))
 
         # 验证必需字段：关系型数据库需要 user/password，非关系型不一定需要
         if db_type not in _NO_AUTH_TYPES:

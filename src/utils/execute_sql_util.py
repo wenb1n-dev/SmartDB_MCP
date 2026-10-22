@@ -12,7 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError, OperationalError, DBAPIError
 
 from connection.pool_manager import MultiDBPoolManager
-from core.exceptions import SQLPermissionError
+from core.exceptions import DataSourcePermissionError
 from permission import SqlPermissionPolicy, SQLOperation
 
 logger = logging.getLogger(__name__)
@@ -121,7 +121,7 @@ class ExecuteSqlUtil:
                             pass
                     raise
 
-        except SQLPermissionError as e:
+        except DataSourcePermissionError as e:
             logger.warning(f"权限拒绝: {e}, SQL: {statement}")
             return SQLResult(
                 success=False,
@@ -270,7 +270,7 @@ class ExecuteSqlUtil:
             是否有权限执行所有操作
 
         Raises:
-            SQLPermissionError: 当权限不足时
+            DataSourcePermissionError: 当权限不足时
         """
         policy = SqlPermissionPolicy()
         return policy.check_permissions(pool_name, operations)

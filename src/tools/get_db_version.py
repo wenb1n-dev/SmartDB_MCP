@@ -3,11 +3,11 @@ from typing import Dict, Sequence, Any
 from mcp.types import TextContent, Tool
 
 from core.exceptions import SQLExecutionError
-from databases.database_factory import FactoryRegistry
+from datasource.registry import FactoryRegistry
 from tools.base import ToolsBase
 
 
-class DatabaseVersion(ToolsBase):
+class GetDbVersionTool(ToolsBase):
     """数据库版本查询工具类
 
     该类用于查询指定连接池所连接的数据库版本信息。
