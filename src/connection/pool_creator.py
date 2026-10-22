@@ -66,7 +66,7 @@ class OraclePoolCreator(DatabasePoolCreator):
         user = quote_plus(config['user'])
         password = quote_plus(config['password'])
         service_name = config.get("service_name", "ORCL")
-        database_url = f"oracle+oracledb://{user}:{password}@{config['host']}:{config['port']}/{service_name}"
+        database_url = f"oracle+oracledb://{user}:{password}@{config['host']}:{config['port']}/?service_name={service_name}"
         return SQLAlchemyConnectionPool(
             database_url=database_url,
             pool_type=config.get("pool_type", "queue"),

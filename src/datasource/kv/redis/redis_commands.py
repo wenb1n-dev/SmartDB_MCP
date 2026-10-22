@@ -8,7 +8,7 @@ import json
 from typing import Any, List, Optional
 
 from connection.pool_manager import MultiDBPoolManager
-from permission.redis_permission import RedisPermissionPolicy, RedisCommandCategory
+from permission.redis_permission import RedisPermissionPolicy
 
 
 class RedisCommandExecutor:

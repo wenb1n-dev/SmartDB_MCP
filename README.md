@@ -7,9 +7,11 @@
 
 # SmartDB
 
-SmartDB is a universal database gateway that implements the Model Context Protocol (MCP) server interface. This gateway allows MCP-compatible clients to connect and explore different databases.
+SmartDB is a universal multi-paradigm data-infrastructure gateway that implements the Model Context Protocol (MCP) server interface. This gateway allows MCP-compatible clients to connect and explore different data sources in a unified way.
 
-Compared to similar products, SmartDB not only provides basic database connection and exploration capabilities but also adds advanced features such as OAuth 2.0 authentication , health checks, SQL optimization, and index health detection, making database management and maintenance more secure and intelligent.
+It currently covers **6 data paradigms and 10 data sources**: 5 relational databases (MySQL, PostgreSQL, Oracle, SQL Server, Dameng), KV store (Redis), document store (MongoDB), vector database (Milvus), search engine (Elasticsearch), and message queue (Apache Kafka), with 26 MCP tools in total. Tools are dynamically filtered and exposed according to the paradigm of each connection pool.
+
+Compared to similar products, SmartDB not only provides basic database connection and exploration capabilities but also adds advanced features such as OAuth 2.0 authentication, health checks, SQL optimization, and index health detection, making database management and maintenance more secure and intelligent.
 
 <img width="1303" height="697" alt="image" src="https://github.com/user-attachments/assets/9340f85e-28b0-45f2-8cb2-768b0d1c8b5c" />
 
@@ -25,8 +27,12 @@ Compared to similar products, SmartDB not only provides basic database connectio
 | Redis      | KV Store | √ | Redis 5.0+              |
 | MongoDB    | Document | √ | MongoDB 4.0+            |
 | Milvus     | Vector | √ | Milvus 2.3+             |
+| Elasticsearch | Search Engine | √ | Python driver ≥ 8.0, auto-adapts to ES 7/8/9 servers |
+| Apache Kafka | Message Queue | √ | kafka-python-ng driver ≥ 2.2.2 |
 
 ## Tool List
+
+There are 26 tools in total. `get_db_health` and `get_db_version` are universal tools available for every data source; the other tools are exposed according to the paradigm of the connection pool.
 
 ### Relational Database Tools
 | Tool Name | Description                                                                                                                                                                                   |
@@ -53,6 +59,7 @@ Compared to similar products, SmartDB not only provides basic database connectio
 | Tool Name | Description |
 |-----------|-------------|
 | execute_mongo_query | Execute MongoDB queries (find/aggregate) with filter, projection, sort, pagination |
+| execute_mongo_write | Execute MongoDB writes (insert_one/insert_many/update_one/update_many/replace_one/delete_one/delete_many) with permission enforcement; supports Extended JSON ($oid/$date); update_many/delete_many require an explicit filter |
 | get_collection_schema | Infer collection schema by sampling documents (field names, types, presence) |
 | get_collection_names | List collections in a MongoDB database, with optional name pattern filter |
 | get_collection_indexes | Query index information for a MongoDB collection or all collections |
@@ -68,6 +75,24 @@ Compared to similar products, SmartDB not only provides basic database connectio
 | get_vector_index_info | Query vector index information (index type, parameters, build progress) |
 | get_db_health | Analyze Milvus health (connection, memory, indexes, latency, nodes) |
 | get_db_version | Query Milvus version |
+
+### Search Engine Tools (Elasticsearch)
+| Tool Name | Description |
+|-----------|-------------|
+| execute_es_query | Execute Elasticsearch DSL queries (search/count/aggregate) with full DSL support |
+| get_index_mapping | Query index mappings (field types, analyzers) and settings |
+| get_index_names | List Elasticsearch indices |
+| get_db_health | Analyze Elasticsearch health (cluster status, shards, nodes) |
+| get_db_version | Query Elasticsearch version |
+
+### Message Queue Tools (Apache Kafka)
+| Tool Name | Description |
+|-----------|-------------|
+| list_topics | List Kafka topics |
+| get_topic_info | Query topic details: partitions, leader, replicas, offsets |
+| get_consumer_lag | Query consumer group lag |
+| get_db_health | Analyze Kafka health (brokers, topics/partitions, ISR, consumer groups) |
+| get_db_version | Query Kafka cluster version and broker metadata |
 
 ## Usage
 
@@ -188,9 +213,31 @@ Note: If you adjust the client ID and key in the oauth configuration, please als
     "role": "readonly",
     "pool_size": 10,
     "type": "milvus"
+  },
+  "elasticsearch": {
+    "host": "127.0.0.1",
+    "port": 9200,
+    "user": "your_user",
+    "password": "your_password",
+    "use_ssl": false,
+    "verify_certs": true,
+    "role": "readonly",
+    "pool_size": 10,
+    "type": "elasticsearch"
+  },
+  "kafka": {
+    "host": "127.0.0.1",
+    "port": 9092,
+    "user": "your_user",
+    "password": "your_password",
+    "role": "readonly",
+    "pool_size": 10,
+    "type": "kafka"
   }
 }
 ```
+
+> For Elasticsearch and Kafka, `user`/`password` are optional: omit them for clusters without authentication. Kafka uses SASL/PLAIN when both are provided. A ready-to-use template is available at `src/config/database_config.example.json`.
 
 * Database Connection Parameter Description
 
@@ -200,15 +247,15 @@ The following table details the meaning and usage of each parameter in the datab
 |-----------|----------|------|-------------|
 | host | Yes | string | Database server address |
 | port | Yes | integer | Database server port number |
-| user | Relational, MongoDB, Milvus | string | Database username |
-| password | Relational, MongoDB, Milvus | string | Database user password |
+| user | Relational, MongoDB, Milvus; optional for Elasticsearch, Kafka (no-auth clusters) | string | Database username |
+| password | Relational, MongoDB, Milvus; optional for Elasticsearch, Kafka (no-auth clusters) | string | Database user password |
 | database | Relational, MongoDB, Milvus | string | Database name to connect to |
 | role | Yes | string | User role, such as "readonly" for read-only permissions |
 | pool_size | Yes | integer | Connection pool size |
 | max_overflow | Relational | integer | Maximum overflow connections in connection pool |
 | pool_recycle | Relational | integer | Connection pool recycle time (seconds) |
 | pool_timeout | Relational | integer | Connection pool timeout time (seconds) |
-| type | Yes | string | Database type: "mysql", "postgresql", "oracle", "mssqlserver", "dameng", "redis", "mongodb", "milvus" |
+| type | Yes | string | Database type: "mysql", "postgresql", "oracle", "mssqlserver", "dameng", "redis", "mongodb", "milvus", "elasticsearch", "kafka" |
 
 * Additional Parameters for Specific Databases
 
@@ -220,14 +267,17 @@ The following table details the meaning and usage of each parameter in the datab
 | auth_source | MongoDB | No | string | Authentication database, default "admin" |
 | min_pool_size | MongoDB | No | integer | Minimum pool size, default 5 |
 | token | Milvus | No | string | Authentication token (alternative to user/password) |
+| use_ssl | Elasticsearch | No | boolean | Whether to connect over HTTPS, default false |
+| verify_certs | Elasticsearch | No | boolean | Whether to verify TLS certificates, default true |
 
-* role permission control configuration items and corresponding database permissions: readonly (readonly), read/write (writer), administrator (admin)
+* Role permission control configuration: readonly / writer / admin. For relational databases the role maps to SQL operation categories as follows:
 ```
     "readonly": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN"],  # readonly permission
     "writer": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE"],  # read/write permission
-    "admin": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE", 
+    "admin": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE",
              "CREATE", "ALTER", "DROP", "TRUNCATE"]  # administrator permission
 ```
+For non-relational data sources (Redis, MongoDB, Milvus, Elasticsearch, Kafka), the same three roles are enforced via a READ / WRITE / ADMIN / DANGEROUS category-based permission policy. For example, a `readonly` role is rejected when calling `execute_mongo_write`, Redis write commands, etc.
 
 * Note
 
@@ -237,16 +287,18 @@ The following table details the meaning and usage of each parameter in the datab
 
 ```bash
 pip install SmartDB-MCP
+```
 
-Parameter explanation
---mode: transmission mode ("stdio", "sse", "streamablehttp")
---envfile path of the environment variable file
---oauth enable oauth authentication (currently only supported in "streamablehttp" mode)
+Parameter explanation:
+
+- `--mode`: transmission mode (`stdio`, `sse`, `streamablehttp`)
+- `--envfile`: path of the environment variable file
+- `--oauth`: enable OAuth authentication (currently only supported in `streamablehttp` mode)
 
 Start command:
- smartdb --envfile=/Volumes/config/.env --oauth=true
 
-
+```bash
+smartdb --envfile=/path/to/.env --oauth=true
 ```
 
 ## Docker Startup

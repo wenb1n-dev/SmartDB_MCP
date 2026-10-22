@@ -10,7 +10,7 @@ from typing import Dict, Sequence, Any, List
 from mcp.types import TextContent, Tool
 
 from datasource.base import Paradigm
-from databases.database_factory import FactoryRegistry
+from datasource.registry import FactoryRegistry
 from tools.base import ToolsBase
 
 

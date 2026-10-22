@@ -14,6 +14,7 @@ from datasource.document.mongodb.mongodb_health import MongoDBHealth
 from datasource.document.mongodb.mongodb_indexes import MongoDBIndexes
 from datasource.document.mongodb.mongodb_queries import MongoDBQueryExecutor
 from datasource.document.mongodb.mongodb_schema import MongoDBSchemaInference
+from datasource.document.mongodb.mongodb_writer import MongoDBWriteExecutor
 from permission.mongo_permission import MongoPermissionPolicy
 
 
@@ -49,6 +50,9 @@ class MongoDBFactory(DocumentFactory):
 
     def create_explain(self) -> MongoDBExplain:
         return MongoDBExplain()
+
+    def create_write_executor(self) -> MongoDBWriteExecutor:
+        return MongoDBWriteExecutor()
 
     def create_permission_policy(self) -> MongoPermissionPolicy:
         return MongoPermissionPolicy()

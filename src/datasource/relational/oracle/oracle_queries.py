@@ -234,7 +234,11 @@ class OracleQueries:
             s.machine,
             s.program,
             t.start_time,
-            ROUND(SYSDATE - t.start_time, 2) * 24 * 60 AS duration_minutes,
+            -- 关键：显式 CAST 成 DATE。不同版本 gv$transaction.start_time 可能是 DATE
+            -- 或 TIMESTAMP；直接用 SYSDATE 去减 TIMESTAMP 会得到 INTERVAL 从而触发
+            -- ORA-00932。统一 CAST AS DATE 后，与 SYSDATE 相减恒为 NUMBER（天数），
+            -- 全版本（DATE/TIMESTAMP、11g~21c+）行为一致。
+            ROUND((SYSDATE - CAST(t.start_time AS DATE)) * 24 * 60, 2) AS duration_minutes,
             s.sql_id,
             sq.sql_text
         FROM
@@ -242,7 +246,8 @@ class OracleQueries:
             JOIN gv$session s ON t.addr = s.taddr
             LEFT JOIN gv$sql sq ON s.sql_id = sq.sql_id AND sq.inst_id = s.inst_id
         WHERE
-            (SYSDATE - t.start_time) > INTERVAL '5' MINUTE
+            -- 相减结果为天数 NUMBER，5 分钟 = 5/(24*60) 天，同类型数值比较。
+            (SYSDATE - CAST(t.start_time AS DATE)) > 5 / 1440
         ORDER BY
             duration_minutes DESC
         """
@@ -392,5 +397,5 @@ class OracleQueries:
         WHERE
             d.tablespace_name = f.tablespace_name
         ORDER BY
-            3 DESC;
+            3 DESC
         """

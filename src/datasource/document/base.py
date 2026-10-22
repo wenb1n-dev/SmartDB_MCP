@@ -67,3 +67,12 @@ class DocumentFactory(DataSourceFactory):
         produce the execution plan.
         """
         ...
+
+    @abstractmethod
+    def create_write_executor(self):
+        """Create a document write executor handler.
+
+        Returns a handler that can execute write operations
+        (insert/update/replace/delete) against collections.
+        """
+        ...

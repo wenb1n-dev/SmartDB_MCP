@@ -5,7 +5,9 @@
 
 # SmartDB
 ## 好用就帮忙点个赞，支持一下呀，拜托各位精英们～。
-SmartDB是一个通用数据库网关，实现了模型上下文协议（Model Context Protocol，简称MCP）服务器接口。这个网关允许与MCP兼容的客户端连接并探索不同的数据库。
+SmartDB 是一个通用多范式数据基础设施网关，实现了模型上下文协议（Model Context Protocol，简称 MCP）服务器接口，允许与 MCP 兼容的客户端以统一方式连接并探索不同的数据源。
+
+目前覆盖 **6 种数据范式、10 种数据源**：5 种关系型数据库（MySQL、PostgreSQL、Oracle、SQL Server、达梦）、KV 存储（Redis）、文档型（MongoDB）、向量型（Milvus）、搜索引擎（Elasticsearch）、消息队列（Apache Kafka），共提供 26 个 MCP 工具，并按连接池所属范式动态过滤暴露。
 
 与同类产品相比，SmartDB不仅提供基本的数据库连接和探索功能，还增加了OAuth2.0认证、健康检查、SQL优化和索引健康检测等高级功能，使数据库管理和维护更加安全、智能化。
 
@@ -23,8 +25,12 @@ SmartDB是一个通用数据库网关，实现了模型上下文协议（Model C
 | Redis | KV 存储 | √  | Redis 5.0+                  |
 | MongoDB | 文档型 | √  | MongoDB 4.0+                |
 | Milvus | 向量型 | √  | Milvus 2.3+                 |
+| Elasticsearch | 搜索引擎 | √  | Python 驱动 ≥ 8.0，自动适配 ES 7/8/9 服务端 |
+| Apache Kafka | 消息队列 | √  | kafka-python-ng 驱动 ≥ 2.2.2 |
 
 # 工具列表
+
+工具总数共 26 个。其中 `get_db_health`、`get_db_version` 为全范式通用工具，其余工具按连接池所属范式暴露。
 
 ## 关系型数据库工具
 | 工具名称            | 描述                                                                                                                                 |
@@ -51,6 +57,7 @@ SmartDB是一个通用数据库网关，实现了模型上下文协议（Model C
 | 工具名称            | 描述                                                                 |
 |-----------------|--------------------------------------------------------------------|
 | execute_mongo_query | 执行 MongoDB 查询（find/aggregate），支持过滤、投影、排序、分页        |
+| execute_mongo_write | 执行 MongoDB 写入（insert_one/insert_many/update_one/update_many/replace_one/delete_one/delete_many），带权限校验，支持扩展 JSON（$oid/$date）；update_many/delete_many 必须显式传入 filter |
 | get_collection_schema | 通过采样文档推断集合 Schema（字段名、类型、出现频率）                   |
 | get_collection_names | 查询数据库中的集合列表，支持按名称模式过滤                              |
 | get_collection_indexes | 查询集合索引信息，支持查询单个或所有集合                               |
@@ -66,6 +73,24 @@ SmartDB是一个通用数据库网关，实现了模型上下文协议（Model C
 | get_vector_index_info | 查询向量集合的索引信息（索引类型、参数、构建进度等）                        |
 | get_db_health | 分析 Milvus 健康状态（连接、内存、索引、延迟、节点），输出诊断报告        |
 | get_db_version | 查询 Milvus 版本号                                                  |
+
+## 搜索引擎工具（Elasticsearch）
+| 工具名称            | 描述                                                                 |
+|-----------------|--------------------------------------------------------------------|
+| execute_es_query | 执行 Elasticsearch DSL 查询（search/count/aggregate），支持完整 DSL |
+| get_index_mapping | 查询索引 Mapping（字段类型、分析器）与设置                          |
+| get_index_names | 查询 Elasticsearch 索引列表                                         |
+| get_db_health | 分析 Elasticsearch 健康状态（集群状态、分片、节点），输出诊断报告    |
+| get_db_version | 查询 Elasticsearch 版本号                                          |
+
+## 消息队列工具（Apache Kafka）
+| 工具名称            | 描述                                                                 |
+|-----------------|--------------------------------------------------------------------|
+| list_topics | 查询 Kafka Topic 列表                                               |
+| get_topic_info | 查询 Topic 详情：分区、Leader、副本、offset                         |
+| get_consumer_lag | 查询消费者组延迟 Lag                                                |
+| get_db_health | 分析 Kafka 健康状态（Broker、Topic/分区、ISR、消费者组），输出诊断报告 |
+| get_db_version | 查询 Kafka 集群版本与 Broker 元数据                                 |
 
 # 使用方法
 ## env 配置文件说明
@@ -187,10 +212,32 @@ OAUTH_USER_PASSWORD=wenb1n
     "role": "readonly",
     "pool_size": 10,
     "type": "milvus"
+  },
+  "elasticsearch": {
+    "host": "127.0.0.1",
+    "port": 9200,
+    "user": "your_user",
+    "password": "your_password",
+    "use_ssl": false,
+    "verify_certs": true,
+    "role": "readonly",
+    "pool_size": 10,
+    "type": "elasticsearch"
+  },
+  "kafka": {
+    "host": "127.0.0.1",
+    "port": 9092,
+    "user": "your_user",
+    "password": "your_password",
+    "role": "readonly",
+    "pool_size": 10,
+    "type": "kafka"
   }
 }
 
 ```
+
+> Elasticsearch 与 Kafka 的 `user`/`password` 为可选项：无认证的集群直接省略即可；Kafka 同时提供 user/password 时使用 SASL/PLAIN 认证。可直接参考 `src/config/database_config.example.json` 中的完整模板。
 * 数据库连接参数说明
 
 下表详细说明了数据库连接配置文件中各参数的含义和用法：
@@ -199,15 +246,15 @@ OAUTH_USER_PASSWORD=wenb1n
 |--------|------|------|------|
 | host | 是 | string | 数据库服务器地址 |
 | port | 是 | integer | 数据库服务器端口号 |
-| user | 关系型、MongoDB、Milvus 必需 | string | 数据库用户名 |
-| password | 关系型、MongoDB、Milvus 必需 | string | 数据库用户密码 |
+| user | 关系型、MongoDB、Milvus 必需；Elasticsearch、Kafka 无认证时可省略 | string | 数据库用户名 |
+| password | 关系型、MongoDB、Milvus 必需；Elasticsearch、Kafka 无认证时可省略 | string | 数据库用户密码 |
 | database | 关系型、MongoDB、Milvus 必需 | string | 要连接的数据库名称 |
 | role | 是 | string | 用户角色，如 "readonly" 表示只读权限 |
 | pool_size | 是 | integer | 连接池大小 |
 | max_overflow | 关系型 | integer | 连接池最大溢出连接数 |
 | pool_recycle | 关系型 | integer | 连接池回收时间（秒） |
 | pool_timeout | 关系型 | integer | 连接池超时时间（秒） |
-| type | 是 | string | 数据库类型，如 "mysql"、"postgresql"、"oracle"、"mssqlserver"、"dameng"、"redis"、"mongodb"、"milvus" |
+| type | 是 | string | 数据库类型，如 "mysql"、"postgresql"、"oracle"、"mssqlserver"、"dameng"、"redis"、"mongodb"、"milvus"、"elasticsearch"、"kafka" |
 
 * 特定数据库额外参数
 
@@ -219,14 +266,17 @@ OAUTH_USER_PASSWORD=wenb1n
 | auth_source | MongoDB | 否 | string | 认证数据库，默认 "admin" |
 | min_pool_size | MongoDB | 否 | integer | 最小连接池大小，默认 5 |
 | token | Milvus | 否 | string | 认证令牌（替代 user/password） |
+| use_ssl | Elasticsearch | 否 | boolean | 是否使用 HTTPS，默认 false |
+| verify_certs | Elasticsearch | 否 | boolean | HTTPS 下是否校验证书，默认 true |
 
-* role 权限控制配置项以及对应数据库权限：只读（readonly）、读写（writer）、管理员（admin）
+* role 权限控制配置项：只读（readonly）、读写（writer）、管理员（admin）。关系型数据库的角色与 SQL 操作分类对应关系如下：
 ```
     "readonly": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN"],  # 只读权限
     "writer": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE"],  # 读写权限
-    "admin": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE", 
+    "admin": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE",
              "CREATE", "ALTER", "DROP", "TRUNCATE"]  # 管理员权限
 ```
+非关系型数据源（Redis、MongoDB、Milvus、Elasticsearch、Kafka）同样使用 readonly/writer/admin 三档角色，底层按 READ / WRITE / ADMIN / DANGEROUS 四类操作做权限校验。例如 readonly 角色调用 `execute_mongo_write`、执行 Redis 写命令等会被拒绝。
    
 * 注意
 
@@ -236,15 +286,17 @@ default 为默认数据库连接配置，必须配置，其他数据库配置请
 1. 安装包
 ```bash
 pip install SmartDB-MCP
+```
 
-参数说明
---mode：传输模式（“stdio”，“sse”，“streamablehttp”）
---envfile 环境变量文件路径
---oauth 启用 oauth 认证（目前仅支持“streamablehttp”模式）
+参数说明：
+
+- `--mode`：传输模式（`stdio`、`sse`、`streamablehttp`）
+- `--envfile`：环境变量文件路径
+- `--oauth`：启用 OAuth 认证（目前仅支持 `streamablehttp` 模式）
 
 启动命令：
- smartdb --envfile=/Volumes/config/.env --oauth=true
-
+```bash
+smartdb --envfile=/path/to/.env --oauth=true
 ```
 
 ## docker 启动
