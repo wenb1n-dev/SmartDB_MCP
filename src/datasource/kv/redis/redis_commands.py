@@ -8,14 +8,12 @@ import json
 from typing import Any, List, Optional
 
 from connection.pool_manager import MultiDBPoolManager
-from permission.redis_permission import RedisPermissionPolicy
+from datasource.base import Paradigm
+from permission.enforcer import enforcer
 
 
 class RedisCommandExecutor:
     """Execute Redis commands with permission enforcement."""
-
-    def __init__(self):
-        self._policy = RedisPermissionPolicy()
 
     def execute_command(
         self,
@@ -36,8 +34,13 @@ class RedisCommandExecutor:
         args = args or []
         command_upper = command.upper()
 
-        # Permission check
-        self._policy.check_permissions(pool_name, command_upper)
+        # 统一鉴权入口：确保鉴权池与执行池为同一个 pool_name
+        enforcer.authorize_category(
+            pool_name,
+            command_upper,
+            Paradigm.KV_STORE,
+            tool="execute_command",
+        ).raise_if_denied()
 
         pool = MultiDBPoolManager.get_pool(pool_name)
         if pool is None:

@@ -12,25 +12,26 @@ from bson import json_util
 
 from connection.pool_manager import MultiDBPoolManager
 from config.dbconfig import get_db_config_by_name
+from datasource.base import Paradigm
+from permission.enforcer import enforcer
+
+
+MONGO_WRITE_OPERATIONS = {
+    "insert_one": "INSERTONE",
+    "insert_many": "INSERTMANY",
+    "update_one": "UPDATEONE",
+    "update_many": "UPDATEMANY",
+    "replace_one": "REPLACEONE",
+    "delete_one": "DELETEONE",
+    "delete_many": "DELETEMANY",
+}
 
 
 class MongoDBWriteExecutor:
     """Execute MongoDB write operations with permission enforcement."""
 
     # 支持的写操作及其在权限表中的分类键
-    _SUPPORTED_OPERATIONS = {
-        "insert_one": "INSERTONE",
-        "insert_many": "INSERTMANY",
-        "update_one": "UPDATEONE",
-        "update_many": "UPDATEMANY",
-        "replace_one": "REPLACEONE",
-        "delete_one": "DELETEONE",
-        "delete_many": "DELETEMANY",
-    }
-
-    def __init__(self):
-        from permission.mongo_permission import MongoPermissionPolicy
-        self._policy = MongoPermissionPolicy()
+    _SUPPORTED_OPERATIONS = MONGO_WRITE_OPERATIONS
 
     @staticmethod
     def _normalize(doc: Any) -> Any:
@@ -82,8 +83,13 @@ class MongoDBWriteExecutor:
                 f"{', '.join(self._SUPPORTED_OPERATIONS)}"
             )
 
-        # 权限校验（readonly 角色会在此抛出 DataSourcePermissionError）
-        self._policy.check_permissions(pool_name, self._SUPPORTED_OPERATIONS[op])
+        # 统一鉴权入口：写操作必须使用调用方指定的目标池进行鉴权
+        enforcer.authorize_category(
+            pool_name,
+            self._SUPPORTED_OPERATIONS[op],
+            Paradigm.DOCUMENT,
+            tool="execute_mongo_write",
+        ).raise_if_denied()
 
         pool = MultiDBPoolManager.get_pool(pool_name)
         if pool is None:

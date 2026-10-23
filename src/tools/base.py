@@ -1,4 +1,6 @@
-from typing import Sequence, Any, Dict, Type, ClassVar, List
+from typing import Sequence, Any, Dict, Type, ClassVar, List, Optional
+
+from permission.guard import PermissionSpec
 from mcp import Tool
 from mcp.types import TextContent
 
@@ -96,6 +98,8 @@ class ToolsBase:
     description: str = ""
     # Applicable paradigms. Empty list means applicable to all paradigms.
     applicable_paradigms: List[Paradigm] = []
+    # 工具层权限声明；None 仅允许基类或未注册抽象工具，实际调用必须在映射表中声明
+    permission_spec: ClassVar[Optional[PermissionSpec]] = None
 
     def __init_subclass__(cls, **kwargs):
         """子类初始化时自动注册到工具注册表"""

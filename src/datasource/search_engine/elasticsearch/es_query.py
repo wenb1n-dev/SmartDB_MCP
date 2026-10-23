@@ -8,14 +8,12 @@ import json
 from typing import Any, Dict, Optional
 
 from connection.pool_manager import MultiDBPoolManager
+from datasource.base import Paradigm
+from permission.enforcer import enforcer
 
 
 class ElasticsearchQueryExecutor:
     """Execute Elasticsearch DSL queries with permission enforcement."""
-
-    def __init__(self):
-        from permission.es_permission import ESPermissionPolicy
-        self._policy = ESPermissionPolicy()
 
     def execute_query(
         self,
@@ -37,8 +35,13 @@ class ElasticsearchQueryExecutor:
         Returns:
             JSON-formatted result string.
         """
-        # Permission check
-        self._policy.check_permissions(pool_name, operation.upper())
+        # 统一鉴权入口：SEARCH/COUNT/AGGREGATE 均按目标执行池鉴权
+        enforcer.authorize_category(
+            pool_name,
+            operation.upper(),
+            Paradigm.SEARCH_ENGINE,
+            tool="execute_es_query",
+        ).raise_if_denied()
 
         pool = MultiDBPoolManager.get_pool(pool_name)
         if pool is None:

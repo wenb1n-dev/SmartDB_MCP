@@ -9,7 +9,9 @@ from contextlib import contextmanager
 import threading
 
 from connection.base import ConnectionPool
+from connection.pool_resolver import DEFAULT_POOL_NAME
 from config.dbconfig import get_db_configs
+from core.exceptions import ConfigurationError
 from .pool_creator import DatabasePoolFactory
 
 logger = logging.getLogger(__name__)
@@ -73,18 +75,46 @@ class MultiDBPoolManager:
             self._config_loaded = True
 
     def _init_from_config(self):
-        """从配置文件自动初始化所有数据库连接池"""
-        try:
-            db_configs = get_db_configs()
-            for db_name, config in db_configs.items():
-                try:
-                    self.add_pool_from_config(db_name, config)
-                    logger.info(f"Successfully initialized pool '{db_name}'")
-                except Exception as e:
-                    logger.error(f"Failed to initialize pool '{db_name}': {e}")
-            logger.info(f"Successfully initialized {len(self._pools)} database pools from config")
-        except Exception as e:
-            logger.error(f"Failed to initialize pools from config: {e}")
+        """从配置文件自动初始化所有数据库连接池。
+
+        启动阶段执行 fail-closed 配置校验：default 池缺失、类型未注册、连接池创建失败
+        都直接抛出异常终止启动，避免服务带着不完整权限面运行。
+        """
+        db_configs = get_db_configs()
+
+        if db_configs and DEFAULT_POOL_NAME not in db_configs:
+            raise ConfigurationError(
+                "数据库配置必须包含 'default' 连接池；未传 pool_name 的工具调用需要确定性默认值"
+            )
+
+        self._validate_pool_types(db_configs)
+
+        initialized = 0
+        for db_name, config in db_configs.items():
+            # 任一连接池创建失败都终止启动，防止运行期才暴露配置错误
+            self.add_pool_from_config(db_name, config)
+            initialized += 1
+            logger.info(
+                "pool=%s type=%s role=%s initialized",
+                db_name,
+                config.get("type"),
+                config.get("role"),
+            )
+
+        logger.info("Successfully initialized %s database pools from config", initialized)
+
+    @staticmethod
+    def _validate_pool_types(db_configs: Dict[str, Any]) -> None:
+        """启动期校验所有配置类型均有对应 PoolCreator。"""
+        supported_types = set(DatabasePoolFactory._creators)
+        for pool_name, config in db_configs.items():
+            db_type = str(config.get("type") or "").lower()
+            if db_type not in supported_types:
+                supported = ", ".join(sorted(supported_types))
+                raise ConfigurationError(
+                    f"连接池 '{pool_name}' 配置了不支持的类型 '{db_type}'，"
+                    f"支持类型: {supported}"
+                )
 
     def add_pool_from_config(self, pool_name: str, config: Dict[str, Any]) -> None:
         """ 创建连接池 """

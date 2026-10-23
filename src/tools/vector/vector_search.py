@@ -92,11 +92,8 @@ class VectorSearchTool(ToolsBase):
             search_params = arguments.get("search_params")
             pool_name = arguments.get("pool_name", "default")
 
-            # Permission check
+            # 权限由工具层 PermissionGuard 与数据源层 enforcer 双重校验
             factory = FactoryRegistry.get_factory_by_pool_name(pool_name)
-            policy = factory.create_permission_policy()
-            policy.check_permissions(pool_name, "SEARCH")
-
             handler = factory.create_vector_search()
 
             result = handler.search(

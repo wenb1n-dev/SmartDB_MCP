@@ -12,14 +12,12 @@ from bson import json_util
 
 from connection.pool_manager import MultiDBPoolManager
 from config.dbconfig import get_db_config_by_name
+from datasource.base import Paradigm
+from permission.enforcer import enforcer
 
 
 class MongoDBQueryExecutor:
     """Execute MongoDB queries with permission enforcement."""
-
-    def __init__(self):
-        from permission.mongo_permission import MongoPermissionPolicy
-        self._policy = MongoPermissionPolicy()
 
     def execute_query(
         self,
@@ -49,8 +47,13 @@ class MongoDBQueryExecutor:
         Returns:
             JSON-formatted result string.
         """
-        # Permission check
-        self._policy.check_permissions(pool_name, operation.upper())
+        # 统一鉴权入口：FIND/AGGREGATE 均按目标执行池鉴权
+        enforcer.authorize_category(
+            pool_name,
+            operation.upper(),
+            Paradigm.DOCUMENT,
+            tool="execute_mongo_query",
+        ).raise_if_denied()
 
         pool = MultiDBPoolManager.get_pool(pool_name)
         if pool is None:

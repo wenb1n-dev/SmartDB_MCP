@@ -7,14 +7,12 @@ import json
 from typing import Optional
 
 from connection.pool_manager import MultiDBPoolManager
+from datasource.base import Paradigm
+from permission.enforcer import enforcer
 
 
 class KafkaTopics:
     """List and query topics in a Kafka cluster."""
-
-    def __init__(self):
-        from permission.kafka_permission import KafkaPermissionPolicy
-        self._policy = KafkaPermissionPolicy()
 
     def get_topic_names(
         self,
@@ -30,8 +28,13 @@ class KafkaTopics:
         Returns:
             JSON-formatted topic list.
         """
-        # Permission check
-        self._policy.check_permissions(pool_name, "LIST_TOPICS")
+        # 统一鉴权入口：Topic 列表读取按目标执行池鉴权
+        enforcer.authorize_category(
+            pool_name,
+            "LIST_TOPICS",
+            Paradigm.MESSAGE_QUEUE,
+            tool="list_topics",
+        ).raise_if_denied()
 
         pool = MultiDBPoolManager.get_pool(pool_name)
         if pool is None:
@@ -92,8 +95,13 @@ class KafkaTopics:
         Returns:
             JSON-formatted topic info including partitions, leaders, and ISR.
         """
-        # Permission check
-        self._policy.check_permissions(pool_name, "DESCRIBE_TOPIC")
+        # 统一鉴权入口：Topic 元数据读取按目标执行池鉴权
+        enforcer.authorize_category(
+            pool_name,
+            "DESCRIBE_TOPIC",
+            Paradigm.MESSAGE_QUEUE,
+            tool="get_topic_info",
+        ).raise_if_denied()
 
         pool = MultiDBPoolManager.get_pool(pool_name)
         if pool is None:

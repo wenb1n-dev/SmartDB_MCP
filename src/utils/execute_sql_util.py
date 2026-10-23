@@ -13,7 +13,7 @@ from sqlalchemy.exc import SQLAlchemyError, OperationalError, DBAPIError
 
 from connection.pool_manager import MultiDBPoolManager
 from core.exceptions import DataSourcePermissionError
-from permission import SqlPermissionPolicy, SQLOperation
+from permission.operations import SQLOperation
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class ExecuteSqlUtil:
         """
         try:
 
-            # 检查权限（使用 pool_name 对应的配置，而非 default 配置）
+            # 检查权限（鉴权池 == 执行池，均为入参 pool_name）
             operations = ExecuteSqlUtil.extract_operations(statement)
 
             ExecuteSqlUtil.check_permissions(operations, pool_name)
@@ -161,8 +161,21 @@ class ExecuteSqlUtil:
         """
         # 使用 sqlparse 分割，正确处理字符串内的分号和注释
         statements = [stmt.strip() for stmt in sqlparse.split(query) if stmt.strip()]
-        results = []
 
+        # 阶段 1：整批预鉴权。对全部语句提取操作并集，一次校验；
+        # 任一语句越权则整批拒绝、零执行，避免「前半批已提交、后半批被拒」。
+        all_operations: Set[SQLOperation] = set()
+        for statement in statements:
+            all_operations |= ExecuteSqlUtil.extract_operations(statement)
+
+        precheck = ExecuteSqlUtil.authorize(pool_name, all_operations)
+        if not precheck.allowed:
+            message = f"权限不足: 整批 SQL 预鉴权未通过，已全部拒绝执行。{precheck.reason}"
+            logger.warning(f"批量SQL预鉴权拒绝: pool={pool_name}, ops={precheck.requested}")
+            return [SQLResult(success=False, message=message) for _ in statements]
+
+        # 阶段 2：逐条执行（单条内保留鉴权做纵深防御）
+        results = []
         for statement in statements:
             try:
                 result = ExecuteSqlUtil.execute_single_statement(pool_name, statement)
@@ -243,24 +256,39 @@ class ExecuteSqlUtil:
                 ]
                 if tokens:
                     first_keyword = tokens[0].value.upper().strip()
-                    try:
-                        operations.add(SQLOperation.from_str(first_keyword))
-                    except ValueError:
-                        # 无法识别的关键字，跳过
-                        continue
+                    # from_str 对无法识别的关键字返回兜底 OTHER（默认拒绝）
+                    operations.add(SQLOperation.from_str(first_keyword))
             else:
                 # sqlparse 返回的类型是字符串，如 "SELECT"、"INSERT"、"UPDATE"、"DELETE"、
-                # "CREATE"、"ALTER"、"DROP" 等
-                try:
-                    operations.add(SQLOperation.from_str(statement_type))
-                except ValueError:
-                    continue
+                # "CREATE"、"ALTER"、"DROP" 等；无法识别时同样落到 OTHER
+                operations.add(SQLOperation.from_str(statement_type))
+
+        # Fail-Closed 硬保证：任何非空输入都必须产生至少一个操作分类，
+        # 绝不允许返回空集合（空集会被权限判定为“无操作需授权”而误放行）。
+        if not operations:
+            operations.add(SQLOperation.OTHER)
 
         return operations
 
     @staticmethod
+    def authorize(pool_name: str, operations: Set[SQLOperation],
+                  tool: str = "execute_sql"):
+        """通过统一鉴权入口对 SQL 操作集合作出决策（不抛异常，返回决策对象）。
+
+        Args:
+            pool_name: 连接池名称（鉴权池必须等于执行池）
+            operations: 操作类型集合
+            tool: 触发鉴权的工具名（审计用）
+
+        Returns:
+            AuthDecision: 允许 / 拒绝决策
+        """
+        from permission.enforcer import enforcer
+        return enforcer.authorize_sql(pool_name, operations, tool=tool)
+
+    @staticmethod
     def check_permissions(operations: Set[SQLOperation], pool_name: str = "default") -> bool:
-        """检查操作权限（委托给 SqlPermissionPolicy）
+        """检查操作权限（委托给统一鉴权入口，拒绝时抛异常）。
 
         Args:
             operations: 操作类型集合
@@ -272,6 +300,7 @@ class ExecuteSqlUtil:
         Raises:
             DataSourcePermissionError: 当权限不足时
         """
-        policy = SqlPermissionPolicy()
-        return policy.check_permissions(pool_name, operations)
+        decision = ExecuteSqlUtil.authorize(pool_name, operations)
+        decision.raise_if_denied()
+        return True
 

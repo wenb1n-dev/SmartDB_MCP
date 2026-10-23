@@ -8,6 +8,8 @@ import json
 from typing import Any, Dict, List, Optional
 
 from connection.pool_manager import MultiDBPoolManager
+from datasource.base import Paradigm
+from permission.enforcer import enforcer
 
 
 class MilvusVectorSearch:
@@ -39,6 +41,14 @@ class MilvusVectorSearch:
         Returns:
             JSON-formatted search results.
         """
+        # 数据源层纵深防御：即使绕过工具层，也必须按目标执行池鉴权
+        enforcer.authorize_category(
+            pool_name,
+            "SEARCH",
+            Paradigm.VECTOR,
+            tool="execute_vector_search",
+        ).raise_if_denied()
+
         pool = MultiDBPoolManager.get_pool(pool_name)
         if pool is None:
             return f"错误: 连接池 '{pool_name}' 不存在"

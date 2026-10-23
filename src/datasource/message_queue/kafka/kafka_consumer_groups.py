@@ -8,14 +8,12 @@ import json
 from typing import Optional
 
 from connection.pool_manager import MultiDBPoolManager
+from datasource.base import Paradigm
+from permission.enforcer import enforcer
 
 
 class KafkaConsumerGroups:
     """Query consumer group info and lag for Kafka."""
-
-    def __init__(self):
-        from permission.kafka_permission import KafkaPermissionPolicy
-        self._policy = KafkaPermissionPolicy()
 
     def get_consumer_lag(
         self,
@@ -31,11 +29,14 @@ class KafkaConsumerGroups:
         Returns:
             JSON-formatted consumer lag info.
         """
-        # Permission check
-        if group_id:
-            self._policy.check_permissions(pool_name, "DESCRIBE_GROUP")
-        else:
-            self._policy.check_permissions(pool_name, "LIST_GROUPS")
+        # 统一鉴权入口：消费者组读取按目标执行池鉴权
+        operation_key = "DESCRIBE_GROUP" if group_id else "LIST_GROUPS"
+        enforcer.authorize_category(
+            pool_name,
+            operation_key,
+            Paradigm.MESSAGE_QUEUE,
+            tool="get_consumer_lag",
+        ).raise_if_denied()
 
         pool = MultiDBPoolManager.get_pool(pool_name)
         if pool is None:

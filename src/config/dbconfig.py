@@ -74,10 +74,26 @@ def _validate_db_configs(db_configs: Dict[str, Dict[str, Any]]) -> Dict[str, Dic
     # 不需要 user/password 的数据库类型
     _NO_AUTH_TYPES = {"redis", "mongodb", "milvus", "elasticsearch", "kafka"}
 
+    from core.exceptions import ConfigurationError
+    from permission.roles import VALID_ROLES
+
     validated_configs = {}
 
     for db_name, config in db_configs.items():
         db_type = config.get("type", "")
+
+        # 角色白名单校验：缺失或非法都 fail-closed（启动期即暴露配置错误，
+        # 不再静默回退到 readonly）。
+        role = config.get("role")
+        if not role:
+            raise ConfigurationError(
+                f"数据库 '{db_name}' 缺少 role 配置，合法值: {', '.join(VALID_ROLES)}"
+            )
+        if role not in VALID_ROLES:
+            raise ConfigurationError(
+                f"数据库 '{db_name}' 配置了非法角色 '{role}'，合法值: {', '.join(VALID_ROLES)}"
+            )
+
         # 设置默认值
         validated_config = {
             "host": config.get("host", "localhost"),
@@ -126,40 +142,14 @@ def _validate_db_configs(db_configs: Dict[str, Dict[str, Any]]) -> Dict[str, Dic
 
     return validated_configs
 
-def get_db_config() -> Dict[str, Any]:
-    """获取默认数据库配置（向后兼容）"""
-    configs = get_db_configs()
-    if not configs:
-        raise ValueError("没有找到数据库配置")
-    elif len(configs) == 1:
-        return list(configs.values())[0]
-    else:
-        # 如果有多个配置，返回第一个
-        first_key = list(configs.keys())[0]
-        return configs[first_key]
-
 def get_db_config_by_name(db_name: str) -> Dict[str, Any]:
-    """根据数据库名称获取特定配置"""
+    """根据连接池名称获取特定配置。
+
+    注意：不再提供「多池时返回第一个配置」的 get_db_config()。
+    历史安全缺陷正是鉴权误用第一个池的角色所致；任何调用方都必须显式传入
+    目标池名，确保鉴权池与执行池一致。
+    """
     configs = get_db_configs()
     if db_name not in configs:
         raise ValueError(f"数据库配置 '{db_name}' 不存在")
     return configs[db_name]
-
-# 定义角色权限
-ROLE_PERMISSIONS = {
-    "readonly": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN"],  # 只读权限
-    "writer": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE"],  # 读写权限
-    "admin": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "INSERT", "UPDATE", "DELETE", 
-             "CREATE", "ALTER", "DROP", "TRUNCATE"]  # 管理员权限
-}
-
-def get_role_permissions(role: str) -> list:
-    """获取指定角色的权限列表
-    
-    参数:
-        role (str): 角色名称
-        
-    返回:
-        list: 该角色允许执行的SQL操作列表
-    """
-    return ROLE_PERMISSIONS.get(role, ROLE_PERMISSIONS["readonly"])  # 默认返回只读权限

@@ -29,6 +29,8 @@ from config.dbconfig import get_db_config_by_name
 from config.settings import get_settings
 from datasource.base import Paradigm
 from datasource.registry import FactoryRegistry
+from permission.guard import permission_guard
+from permission.tool_specs import TOOL_PERMISSION_SPECS
 
 
 
@@ -84,23 +86,40 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> Sequence[TextConten
         ValueError: 当指定了未知的工具名称时抛出异常
     """
     tool = ToolRegistry.get_tool(name)
+    permission_spec = TOOL_PERMISSION_SPECS.get(name)
 
-    # Paradigm validation: check if the tool is applicable for the target pool
-    pool_name = arguments.get("pool_name", "default")
+    # 未声明权限的工具 fail-closed，防止新增工具绕过统一鉴权
+    if permission_spec is None:
+        return [TextContent(
+            type="text",
+            text=f"错误: 工具 '{name}' 未声明权限策略，已按安全策略拒绝执行"
+        )]
+
+    pool_name = permission_spec.resolve_pool_name(arguments or {})
+
+    # 范式校验与权限校验都必须 fail-closed，不再因解析失败而放行
     try:
         db_config = get_db_config_by_name(pool_name)
         db_type = db_config.get("type")
         factory_class = FactoryRegistry._factory_classes.get(db_type)
-        if factory_class:
-            pool_paradigm = factory_class.paradigm
-            if not ToolRegistry.is_tool_applicable(name, pool_paradigm):
-                return [TextContent(
-                    type="text",
-                    text=f"错误: 工具 '{name}' 不适用于范式 '{pool_paradigm.value}' 的数据源"
-                )]
-    except Exception:
-        # If we can't determine the paradigm, allow the call (backward compatibility)
-        pass
+        if factory_class is None:
+            return [TextContent(
+                type="text",
+                text=f"错误: 无法识别连接池 '{pool_name}' 的数据源类型，已拒绝执行"
+            )]
+
+        pool_paradigm = factory_class.paradigm
+        if not ToolRegistry.is_tool_applicable(name, pool_paradigm):
+            return [TextContent(
+                type="text",
+                text=f"错误: 工具 '{name}' 不适用于范式 '{pool_paradigm.value}' 的数据源"
+            )]
+
+        decision = permission_guard.authorize(name, permission_spec, arguments or {})
+        if not decision.allowed:
+            return [TextContent(type="text", text=f"权限不足: {decision.reason}")]
+    except Exception as exc:
+        return [TextContent(type="text", text=f"错误: 工具调用被安全策略拒绝: {str(exc)}")]
 
     return await tool.run_tool(arguments)
 
