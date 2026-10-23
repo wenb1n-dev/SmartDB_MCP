@@ -13,7 +13,8 @@ It currently covers **6 data paradigms and 10 data sources**: 5 relational datab
 
 Compared to similar products, SmartDB not only provides basic database connection and exploration capabilities but also adds advanced features such as OAuth 2.0 authentication, health checks, SQL optimization, and index health detection, making database management and maintenance more secure and intelligent.
 
-<img width="1303" height="697" alt="image" src="https://github.com/user-attachments/assets/9340f85e-28b0-45f2-8cb2-768b0d1c8b5c" />
+<img width="3000" height="1660" alt="SmartDB 数据源支持简图（手绘风高清位图）" src="https://github.com/user-attachments/assets/0004295e-d653-43d4-af1f-35b5e98ac184" />
+
 
 
 ## Currently Supported Databases

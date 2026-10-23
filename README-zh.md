@@ -11,7 +11,7 @@ SmartDB 是一个通用多范式数据基础设施网关，实现了模型上下
 
 与同类产品相比，SmartDB不仅提供基本的数据库连接和探索功能，还增加了OAuth2.0认证、健康检查、SQL优化和索引健康检测等高级功能，使数据库管理和维护更加安全、智能化。
 
-<img width="1303" height="697" alt="image" src="https://github.com/user-attachments/assets/9340f85e-28b0-45f2-8cb2-768b0d1c8b5c" />
+<img width="3000" height="1660" alt="SmartDB 数据源支持简图（手绘风高清位图）" src="https://github.com/user-attachments/assets/0004295e-d653-43d4-af1f-35b5e98ac184" />
 
 
 # 目前支持的数据库
